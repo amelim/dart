@@ -12,3 +12,4 @@
 #cmakedefine HAVE_IPOPT 1
 #cmakedefine HAVE_SNOPT 1
 #cmakedefine HAVE_BULLET_COLLISION 1
+#cmakedefine HAVE_SHARK 1
