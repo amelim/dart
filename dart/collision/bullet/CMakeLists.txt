@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_collision_bullet ${srcs})
+add_library(dart_collision_bullet ${hdrs} ${srcs})
 target_link_libraries(dart_collision_bullet ${DART_CORE_DEPENDENCIES})
 
 # Install

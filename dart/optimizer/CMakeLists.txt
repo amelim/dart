@@ -14,8 +14,10 @@ if(HAVE_SNOPT)
 endif()
 
 # Library
-add_library(dart_optimizer ${srcs})
-target_link_libraries(dart_optimizer ${DART_DEPENDENCIES})
+add_library(dart_optimizer ${hdrs} ${srcs})
+target_link_libraries(dart_optimizer
+  dart_common
+  ${DART_DEPENDENCIES})
 if(HAVE_IPOPT)
   target_link_libraries(dart_optimizer dart_optimizer_ipopt)
 endif()

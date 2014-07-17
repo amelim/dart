@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_renderer ${srcs})
+add_library(dart_renderer ${hdrs} ${srcs})
 target_link_libraries(dart_renderer ${DART_DEPENDENCIES})
 
 # Install

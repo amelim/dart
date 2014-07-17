@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_math ${srcs})
+add_library(dart_math ${hdrs} ${srcs})
 target_link_libraries(dart_math ${DART_CORE_DEPENDENCIES})
 
 # Install

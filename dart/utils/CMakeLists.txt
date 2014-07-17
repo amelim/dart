@@ -7,7 +7,7 @@ add_subdirectory(sdf)
 add_subdirectory(urdf)
 
 # Library
-add_library(dart_utils ${srcs})
+add_library(dart_utils ${hdrs} ${srcs})
 target_link_libraries(dart_utils
   dart_collision
   dart_utils_sdf

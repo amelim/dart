@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_lcpsolver ${srcs})
+add_library(dart_lcpsolver ${hdrs} ${srcs})
 target_link_libraries(dart_lcpsolver ${DART_CORE_DEPENDENCIES})
 
 # Install

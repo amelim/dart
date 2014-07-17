@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_dynamics ${srcs})
+add_library(dart_dynamics ${hdrs} ${srcs})
 target_link_libraries(dart_dynamics
   dart_common
   dart_math

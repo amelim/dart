@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_constraint ${srcs})
+add_library(dart_constraint ${hdrs} ${srcs})
 target_link_libraries(dart_constraint
   dart_lcpsolver
   dart_collision

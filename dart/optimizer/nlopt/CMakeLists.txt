@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_optimizer_nlopt ${srcs})
+add_library(dart_optimizer_nlopt ${hdrs} ${srcs})
 target_link_libraries(dart_optimizer_nlopt ${DART_DEPENDENCIES})
 
 # Install

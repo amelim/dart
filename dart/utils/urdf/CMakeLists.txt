@@ -3,7 +3,7 @@ file(GLOB srcs "*.cpp")
 file(GLOB hdrs "*.h")
 
 # Library
-add_library(dart_utils_urdf ${srcs})
+add_library(dart_utils_urdf ${hdrs} ${srcs})
 target_link_libraries(dart_utils_urdf ${DART_DEPENDENCIES})
 
 # Install

@@ -11,7 +11,7 @@ if(HAVE_BULLET_COLLISION)
 endif()
 
 # Library
-add_library(dart_collision ${srcs})
+add_library(dart_collision ${hdrs} ${srcs})
 target_link_libraries(dart_collision
   dart_collision_dart
   dart_collision_fcl
