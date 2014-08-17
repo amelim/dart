@@ -115,5 +115,22 @@ void FreeJoint::updateLocalJacobianTimeDeriv()
   assert(mJacobianDeriv == (Eigen::Matrix6d::Zero()));
 }
 
+//==============================================================================
+Eigen::Isometry3d FreeJoint::updateGencoordDiscrete(const Eigen::Vector6d& _V,
+                                                    double _dt)
+{
+  // Update local transformation across the joint
+  Eigen::Isometry3d T = Eigen::Isometry3d::Identity();
+  T.translation() = _dt * _V.tail<3>();
+  T.linear()      = math::expMapRot(_dt * _V.head<3>());
+  mQ = mQ * T;
+  mT = mT_ParentBodyToJoint * mQ * mT_ChildBodyToJoint.inverse();
+
+  // Update generalized coordinates
+  mPositions = math::logMap(mQ);
+
+  return T;
+}
+
 }  // namespace dynamics
 }  // namespace dart

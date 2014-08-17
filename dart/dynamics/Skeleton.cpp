@@ -1576,6 +1576,21 @@ void Skeleton::computeInverseDynamicsRecursionB(bool _withExternalForces,
 }
 
 //==============================================================================
+void Skeleton::computeForwardDynamicsDiscrete()
+{
+  // Skip immobile or 0-dof skeleton
+  if (getNumDofs() == 0)
+    return;
+
+  // Backward recursion
+  for (std::vector<BodyNode*>::iterator it = mBodyNodes.begin();
+       it != mBodyNodes.end(); ++it)
+  {
+    (*it)->updateForwardDynamicsDiscrete(mTimeStep, mGravity);
+  }
+}
+
+//==============================================================================
 //void Skeleton::computeHybridDynamics()
 //{
 //  dterr << "Not implemented yet.\n";

@@ -78,6 +78,10 @@ protected:
   // Documentation inherited
   virtual void updateLocalJacobianTimeDeriv();
 
+  // Documentation inherited
+  virtual Eigen::Isometry3d updateGencoordDiscrete(const Eigen::Vector6d& _V,
+                                                   double _dt);
+
 protected:
   /// Transformation matrix dependant on generalized coordinates
   Eigen::Isometry3d mQ;

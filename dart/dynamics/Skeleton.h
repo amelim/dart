@@ -519,6 +519,8 @@ public:
   void computeInverseDynamicsRecursionB(bool _withExternalForces = false,
                                         bool _withDampingForces = false);
 
+  void computeForwardDynamicsDiscrete();
+
   /// Compute recursion part A of hybrid dynamics
 //  void computeHybridDynamicsRecursionA();
 

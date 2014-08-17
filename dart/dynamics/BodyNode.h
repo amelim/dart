@@ -539,6 +539,9 @@ protected:
   /// Update transmitted force from parent joint
   virtual void updateTransmittedWrench();
 
+  ///
+  virtual void updateForwardDynamicsDiscrete(double _dt, const Eigen::Vector3d& _gravity);
+
   //----------------------------------------------------------------------------
   // Impulse based dynamics
   //----------------------------------------------------------------------------

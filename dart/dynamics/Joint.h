@@ -461,6 +461,13 @@ protected:
   ///
   virtual void updateForceWithImpulse(double _timeStep) = 0;
 
+  ///
+  virtual Eigen::Isometry3d updateGencoordDiscrete(const Eigen::Vector6d& _V,
+                                                   double _dt)
+  {
+    return Eigen::Isometry3d::Identity();
+  }
+
   //----------------------------------------------------------------------------
   // Recursive algorithms for equations of motion
   //----------------------------------------------------------------------------

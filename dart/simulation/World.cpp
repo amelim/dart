@@ -112,42 +112,43 @@ void World::step()
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->computeForwardDynamicsRecursionPartB();
-    (*it)->integrateVelocities(mTimeStep);
-    (*it)->computeForwardKinematics(false, true, false);
+//    (*it)->computeForwardDynamicsRecursionPartB();
+//    (*it)->integrateVelocities(mTimeStep);
+//    (*it)->computeForwardKinematics(false, true, false);
+    (*it)->computeForwardDynamicsDiscrete();
   }
 
   // Detect active constraints and compute constraint impulses
-  mConstraintSolver->solve();
+  //mConstraintSolver->solve();
 
   // Compute velocity changes given constraint impulses
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if ((*it)->isImpulseApplied() && (*it)->isMobile())
-    {
-      (*it)->computeImpulseForwardDynamics();
-      (*it)->setImpulseApplied(false);
-    }
-  }
+//  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+//       it != mSkeletons.end(); ++it)
+//  {
+//    if ((*it)->isImpulseApplied() && (*it)->isMobile())
+//    {
+//      (*it)->computeImpulseForwardDynamics();
+//      (*it)->setImpulseApplied(false);
+//    }
+//  }
 
   //
+//  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
+//       it != mSkeletons.end(); ++it)
+//  {
+//    if (!(*it)->isMobile())
+//      continue;
+
+//    (*it)->integratePositions(mTimeStep);
+//  }
+
   for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
        it != mSkeletons.end(); ++it)
   {
     if (!(*it)->isMobile())
       continue;
 
-    (*it)->integratePositions(mTimeStep);
-  }
-
-  for (std::vector<dynamics::Skeleton*>::iterator it = mSkeletons.begin();
-       it != mSkeletons.end(); ++it)
-  {
-    if (!(*it)->isMobile())
-      continue;
-
-    (*it)->computeForwardDynamicsRecursionPartA();
+//    (*it)->computeForwardDynamicsRecursionPartA();
     (*it)->resetForces();
     (*it)->clearExternalForces();
 //    (*it)->clearConstraintImpulses();

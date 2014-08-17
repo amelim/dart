@@ -1078,6 +1078,26 @@ void BodyNode::updateTransmittedWrench()
 }
 
 //==============================================================================
+void BodyNode::updateForwardDynamicsDiscrete(double _dt,
+                                             const Eigen::Vector3d& _gravity)
+{
+  // Gravity force
+  if (mGravityMode == true)
+    mFgravity.noalias() = mI * math::AdInvRLinear(mW, _gravity);
+  else
+    mFgravity.setZero();
+
+  // Position update
+  Eigen::Isometry3d diffT = mParentJoint->updateGencoordDiscrete(mV, _dt);
+  mW = mParentJoint->mT;
+
+  // Velocity update
+  mV = mI.inverse() * (math::dAdT(diffT, mI * mV)
+                       + _dt * mFext
+                       + _dt * mFgravity);
+}
+
+//==============================================================================
 const Eigen::Vector6d& BodyNode::getExternalForceLocal() const
 {
   return mFext;
