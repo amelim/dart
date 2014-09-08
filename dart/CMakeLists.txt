@@ -12,8 +12,17 @@ set(NONCORE_SUBDIRS gui planning utils)
 # Search all header and source files
 #-- Core
 foreach(SUBDIR ${CORE_SUBDIRS})
+  file(GLOB_RECURSE subdir_hdrs ${SUBDIR}/*.h)
   file(GLOB_RECURSE subdir_srcs ${SUBDIR}/*.cpp ${SUBDIR}/*.h)
   set(core_srcs ${core_srcs} ${subdir_srcs})
+
+  set(headers "")
+  foreach(hdr ${subdir_hdrs})
+    get_filename_component(hdrs_nameonly ${hdr} NAME)
+    set(headers "${headers}#include \"dart/${SUBDIR}/${hdrs_nameonly}\"\n")
+  endforeach()
+  configure_file(${CMAKE_SOURCE_DIR}/dart/${SUBDIR}/${SUBDIR}.h.in
+                 ${CMAKE_BINARY_DIR}/dart/${SUBDIR}/${SUBDIR}.h)
 endforeach()
 
 file(GLOB subdir_srcs collision/*.cpp collision/*.h)
