@@ -165,12 +165,12 @@ void JOINTS::kinematicsTest(Joint* _joint)
       numericJ.col(i) = Ji;
     }
 
-    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
-    {
-      // Skip this test for BallJoint and FreeJoint since Jacobian of BallJoint
-      // and FreeJoint is not obtained by the above method.
-    }
-    else
+//    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+//    {
+//      // Skip this test for BallJoint and FreeJoint since Jacobian of BallJoint
+//      // and FreeJoint is not obtained by the above method.
+//    }
+//    else
     {
       for (int i = 0; i < dof; ++i)
         for (int j = 0; j < 6; ++j)
@@ -205,13 +205,13 @@ void JOINTS::kinematicsTest(Joint* _joint)
     }
 
 
-    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
-    {
-      // Skip this test for BallJoint and FreeJoint since time derivative of
-      // Jacobian of BallJoint and FreeJoint is not obtained by the above
-      // method.
-    }
-    else
+//    if (dynamic_cast<BallJoint*>(_joint) || dynamic_cast<FreeJoint*>(_joint))
+//    {
+//      // Skip this test for BallJoint and FreeJoint since time derivative of
+//      // Jacobian of BallJoint and FreeJoint is not obtained by the above
+//      // method.
+//    }
+//    else
     {
       for (int i = 0; i < dof; ++i)
         for (int j = 0; j < 6; ++j)
@@ -287,6 +287,14 @@ TEST_F(JOINTS, BALL_JOINT)
   kinematicsTest(ballJoint);
 }
 
+//// 3-dof joint
+//TEST_F(JOINTS, BALL_JOINT2)
+//{
+//  BallJoint2* ballJoint = new BallJoint2;
+
+//  kinematicsTest(ballJoint);
+//}
+
 // 3-dof joint
 TEST_F(JOINTS, EULER_JOINT)
 {
@@ -324,6 +332,14 @@ TEST_F(JOINTS, FREE_JOINT)
 
   kinematicsTest(freeJoint);
 }
+
+//// 6-dof joint
+//TEST_F(JOINTS, FREE_JOINT2)
+//{
+//  FreeJoint2* freeJoint = new FreeJoint2;
+
+//  kinematicsTest(freeJoint);
+//}
 
 //==============================================================================
 TEST_F(JOINTS, POSITION_LIMIT)

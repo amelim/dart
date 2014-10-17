@@ -44,6 +44,47 @@
 namespace dart {
 namespace dynamics {
 
+///// class BallJoint
+//class BallJoint : public MultiDofJoint<3>
+//{
+//public:
+//  /// Constructor
+//  explicit BallJoint(const std::string& _name = "BallJoint");
+
+//  /// Destructor
+//  virtual ~BallJoint();
+
+//  // Documentation inherited
+//  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+
+//  // Documentation inherited
+//  virtual Eigen::Vector6d getBodyConstraintWrench() const
+//  {
+//    return mWrench - mJacobian * mForces;
+//  }
+
+//protected:
+//  // Documentation inherited
+//  virtual void integratePositions(double _dt);
+
+//  // Documentation inherited
+//  virtual void updateLocalTransform();
+
+//  // Documentation inherited
+//  virtual void updateLocalJacobian();
+
+//  // Documentation inherited
+//  virtual void updateLocalJacobianTimeDeriv();
+
+//protected:
+//  /// Rotation matrix
+//  Eigen::Isometry3d mR;
+
+//public:
+//  // To get byte-aligned Eigen vectors
+//  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+//};
+
 /// class BallJoint
 class BallJoint : public MultiDofJoint<3>
 {

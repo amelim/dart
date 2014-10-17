@@ -46,6 +46,47 @@
 namespace dart {
 namespace dynamics {
 
+///// class FreeJoint
+//class FreeJoint : public MultiDofJoint<6>
+//{
+//public:
+//  /// Constructor
+//  explicit FreeJoint(const std::string& _name = "FreeJoint");
+
+//  /// Destructor
+//  virtual ~FreeJoint();
+
+//  // Documentation inherited
+//  virtual void setTransformFromChildBodyNode(const Eigen::Isometry3d& _T);
+
+//  // Documentation inherited
+//  virtual Eigen::Vector6d getBodyConstraintWrench() const
+//  {
+//    return mWrench - mJacobian * mForces;
+//  }
+
+//protected:
+//  // Documentation inherited
+//  virtual void integratePositions(double _dt);
+
+//  // Documentation inherited
+//  virtual void updateLocalTransform();
+
+//  // Documentation inherited
+//  virtual void updateLocalJacobian();
+
+//  // Documentation inherited
+//  virtual void updateLocalJacobianTimeDeriv();
+
+//protected:
+//  /// Transformation matrix dependant on generalized coordinates
+//  Eigen::Isometry3d mQ;
+
+//public:
+//  // To get byte-aligned Eigen vectors
+//  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+//};
+
 /// class FreeJoint
 class FreeJoint : public MultiDofJoint<6>
 {
