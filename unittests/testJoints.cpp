@@ -64,14 +64,14 @@ using namespace dart::simulation;
 #define JOINT_TOL 0.01
 
 //==============================================================================
-class JOINTS : public testing::Test
+class Joints : public testing::Test
 {
 public:
   void kinematicsTest(Joint* _joint);
 };
 
 //==============================================================================
-void JOINTS::kinematicsTest(Joint* _joint)
+void Joints::kinematicsTest(Joint* _joint)
 {
   assert(_joint);
 
@@ -240,7 +240,7 @@ void JOINTS::kinematicsTest(Joint* _joint)
 }
 
 // 0-dof joint
-TEST_F(JOINTS, WELD_JOINT)
+TEST_F(Joints, WELD_JOINT)
 {
   WeldJoint* weldJoint = new WeldJoint;
 
@@ -248,7 +248,7 @@ TEST_F(JOINTS, WELD_JOINT)
 }
 
 // 1-dof joint
-TEST_F(JOINTS, REVOLUTE_JOINT)
+TEST_F(Joints, REVOLUTE_JOINT)
 {
   RevoluteJoint* revJoint = new RevoluteJoint;
 
@@ -256,7 +256,7 @@ TEST_F(JOINTS, REVOLUTE_JOINT)
 }
 
 // 1-dof joint
-TEST_F(JOINTS, PRISMATIC_JOINT)
+TEST_F(Joints, PRISMATIC_JOINT)
 {
   PrismaticJoint* priJoint = new PrismaticJoint;
 
@@ -264,7 +264,7 @@ TEST_F(JOINTS, PRISMATIC_JOINT)
 }
 
 // 1-dof joint
-TEST_F(JOINTS, SCREW_JOINT)
+TEST_F(Joints, SCREW_JOINT)
 {
   ScrewJoint* screwJoint = new ScrewJoint;
 
@@ -272,7 +272,7 @@ TEST_F(JOINTS, SCREW_JOINT)
 }
 
 // 2-dof joint
-TEST_F(JOINTS, UNIVERSAL_JOINT)
+TEST_F(Joints, UNIVERSAL_JOINT)
 {
   UniversalJoint* univJoint = new UniversalJoint;
 
@@ -280,7 +280,7 @@ TEST_F(JOINTS, UNIVERSAL_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, BALL_JOINT)
+TEST_F(Joints, BALL_JOINT)
 {
   BallJoint* ballJoint = new BallJoint;
 
@@ -288,7 +288,7 @@ TEST_F(JOINTS, BALL_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, EULER_JOINT)
+TEST_F(Joints, EULER_JOINT)
 {
   EulerJoint* eulerJoint1 = new EulerJoint;
 
@@ -302,7 +302,7 @@ TEST_F(JOINTS, EULER_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, TRANSLATIONAL_JOINT)
+TEST_F(Joints, TRANSLATIONAL_JOINT)
 {
   TranslationalJoint* translationalJoint = new TranslationalJoint;
 
@@ -310,7 +310,7 @@ TEST_F(JOINTS, TRANSLATIONAL_JOINT)
 }
 
 // 3-dof joint
-TEST_F(JOINTS, PLANAR_JOINT)
+TEST_F(Joints, PLANAR_JOINT)
 {
   PlanarJoint* planarJoint = new PlanarJoint;
 
@@ -318,7 +318,7 @@ TEST_F(JOINTS, PLANAR_JOINT)
 }
 
 // 6-dof joint
-TEST_F(JOINTS, FREE_JOINT)
+TEST_F(Joints, FREE_JOINT)
 {
   FreeJoint* freeJoint = new FreeJoint;
 
@@ -326,7 +326,7 @@ TEST_F(JOINTS, FREE_JOINT)
 }
 
 //==============================================================================
-TEST_F(JOINTS, POSITION_LIMIT)
+TEST_F(Joints, POSITION_LIMIT)
 {
   double tol = 1e-3;
 
@@ -397,10 +397,41 @@ TEST_F(JOINTS, POSITION_LIMIT)
 }
 
 //==============================================================================
+TEST_F(Joints, GenCoordTypes)
+{
+  Skeleton* skel = new Skeleton();
+  BodyNode* bodyNode = new BodyNode();
+  BallJoint* ballJoint = new BallJoint();
+  bodyNode->setParentJoint(ballJoint);
+  skel->addBodyNode(bodyNode);
+  skel->init();
+
+  Eigen::Vector3d genCoords;
+
+  EXPECT_EQ(bodyNode->getTransform().matrix(),
+            Eigen::Isometry3d::Identity().matrix());
+
+  Eigen::Matrix3d R = math::expMapRot(Eigen::Vector3d::Random());
+  skel->setRotationGenCoordType(RotationGenCoordType::SO3_LIE_ALGEBRA);
+  skel->setPositions(math::logMap(R));
+
+  skel->setRotationGenCoordType(RotationGenCoordType::EULER_EXTRINSIC_XYZ);
+  genCoords = skel->getPositions();
+
+  std::cout << "dof: " << genCoords.size() << std::endl;
+  std::cout << "genCoords          : " << genCoords.transpose() << std::endl;
+  std::cout << "matrixToEulerXYZ(R): " << matrixToEulerXYZ(R).transpose() << std::endl;
+  std::cout << "logMap(R)          : " << logMap(R).transpose() << std::endl;
+
+//  EXPECT_EQ(genCoords, math::matrixToEulerXYZ(R));
+
+  delete skel;
+}
+
+//==============================================================================
 int main(int argc, char* argv[])
 {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
 

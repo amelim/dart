@@ -68,6 +68,77 @@ struct GenCoordInfo
   size_t localIndex;
 };
 
+/// \brief Generalized coordinate type for rotation matrix
+enum class RotationGenCoordType
+{
+  /// Space: \f$ se(3) \f$,
+  /// Map: \f$ R = exp(r) \f$
+  SO3_LIE_ALGEBRA     = 0,
+
+  /// Space: \f$ \mathbf{R}^3 \f$,
+  /// Map: \f$ R = RotX(r_1) RotY(r_2) RotZ(r_3) \f$
+  EULER_INTRINSIC_XYZ = 1,
+
+  /// Space: \f$ \mathbf{R}^3 \f$,
+  /// Map: \f$ R = RotZ(r_1) RotY(r_2) RotX(r_3) \f$
+  EULER_INTRINSIC_ZYX = 2,
+
+  /// Space: \f$ \mathbf{R}^3 \f$,
+  /// Map: \f$ R = RotZ(r_3) RotY(r_2) RotX(r_1) \f$
+  EULER_EXTRINSIC_XYZ = 3,
+
+  /// Space: \f$ \mathbf{R}^3 \f$,
+  /// Map: \f$ R = RotX(r_3) RotY(r_2) RotZ(r_1) \f$
+  EULER_EXTRINSIC_ZYX = 4
+};
+
+/// \brief Generalized coordinate type for transformation matrix
+///
+/// Transformation matrix can be represented as
+/// \f$ T = \begin{bmatrix} R & p \\ 0 & 1 \end{bmatrix} \in SE(3) \f$, where
+/// \f$ R \in SO(3) \f$ and \f$ p \in \mathbf{R}^3 \f$, and
+/// the corresponding generalized coordinate is
+/// \f$ t = (t1, t2, t3, t4, t5, t6) \in \mathbf{R}^6 \f$. The meaning of
+/// generalized coordinate is determined by
+/// \link TransformGenCoordType \endlink. The definitions of Euler angles
+/// mappings are:
+/// \f[
+/// \begin{aligned}
+/// EulerXYZ(a, b, c) = RotX(a) RotY(b) RotZ(c) \\
+/// EulerZYX(a, b, c) = RotZ(a) RotY(b) RotX(c)
+/// \end{aligned}
+/// \f]
+enum class TransformGenCoordType
+{
+  /// Space: \f$ se(3) \f$
+  /// Map: \f$ t = log(T) \f$
+  SE3_LIE_ALGEBRA                  = 0,
+
+  /// Space: \f$ so(3) \times \mathbf{R}^3 \f$
+  /// Map: \f$ (t1, t2, t3) = log(R), ~ (t4, t5, t6) = p \f$
+  SO3_LIE_ALGEBRA_AND_POSITION     = 1,
+
+  /// Space: \f$ \mathbf{R}^3 \times so(3) \f$
+  /// Map: \f$ (t1, t2, t3) = p, ~ (t4, t5, t6) = log(R) \f$
+  POSITION_AND_SO3_LIE_ALGEBRA     = 2,
+
+  /// Space: \f$ \mathbf{R}^3 \times \mathbf{R}^3 \f$
+  /// Map: \f$ (t1, t2, t3) = p, ~ (t4, t5, t6) = EulerXYZ^{-1}(R) \f$
+  POSITION_AND_EULER_INTRINSIC_XYZ = 3,
+
+  /// Space: \f$ \mathbf{R}^3 \times \mathbf{R}^3 \f$
+  /// Map: \f$ (t1, t2, t3) = p, ~ (t4, t5, t6) = EulerZYX^{-1}(R) \f$
+  POSITION_AND_EULER_INTRINSIC_ZYX = 4,
+
+  /// Space: \f$ \mathbf{R}^3 \times \mathbf{R}^3 \f$
+  /// Map: \f$ (t1, t2, t3) = p, ~ (t6, t5, t4) = EulerZYX^{-1}(R) \f$
+  POSITION_AND_EULER_EXTRINSIC_XYZ = 5,
+
+  /// Space: \f$ \mathbf{R}^3 \times \mathbf{R}^3 \f$
+  /// Map: \f$ (t1, t2, t3) = p, ~ (t6, t5, t4) = EulerXYZ^{-1}(R) \f$
+  POSITION_AND_EULER_EXTRINSIC_ZYX = 6
+};
+
 /// class Skeleton
 class Skeleton
 {
@@ -190,6 +261,18 @@ public:
 
   ///
   GenCoordInfo getGenCoordInfo(size_t _index) const;
+
+  /// \brief Set generalized coordinate type for transformation matrix
+  void setTransformGenCoordType(TransformGenCoordType _type);
+
+  /// \brief Get generalized coordinate type for transformation matrix
+  TransformGenCoordType getTransformGenCoordType() const;
+
+  /// \brief Set generalized coordinate type for rotation matrix
+  void setRotationGenCoordType(RotationGenCoordType _type);
+
+  /// \brief Get generalized coordinate type for rotation matrix
+  RotationGenCoordType getRotationGenCoordType() const;
 
   //----------------------------------------------------------------------------
   // Position
@@ -615,6 +698,22 @@ protected:
 
   ///
   std::vector<GenCoordInfo> mGenCoordInfos;
+
+  /// \brief Generalized coordinate type for transformation matrix
+  ///
+  /// \remarks Generalized coordinate is a property of Skeleton rather than
+  ///   BodyNode nor Joint so we store the generalized coordinate type for all
+  ///   the component of Skeleton here, and the components access the Skeleton
+  ///   to get the type.
+  TransformGenCoordType mTransformGenCoordType;
+
+  /// \brief Generalized coordinate type for rotation matrix
+  ///
+  /// \remarks Generalized coordinate is a property of Skeleton rather than
+  ///   BodyNode nor Joint so we store the generalized coordinate type for all
+  ///   the component of Skeleton here, and the components access the Skeleton
+  ///   to get the type.
+  RotationGenCoordType mRotationGenCoordType;
 
   /// True if self collision check is enabled
   bool mEnabledSelfCollisionCheck;

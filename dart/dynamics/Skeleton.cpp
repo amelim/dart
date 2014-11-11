@@ -58,6 +58,8 @@ namespace dynamics {
 Skeleton::Skeleton(const std::string& _name)
   : mName(_name),
     mDof(0),
+    mTransformGenCoordType(TransformGenCoordType::SE3_LIE_ALGEBRA),
+    mRotationGenCoordType(RotationGenCoordType::SO3_LIE_ALGEBRA),
     mEnabledSelfCollisionCheck(false),
     mEnabledAdjacentBodyCheck(false),
     mIsMobile(true),
@@ -388,6 +390,30 @@ GenCoordInfo Skeleton::getGenCoordInfo(size_t _index) const
   assert(_index < getNumDofs());
 
   return mGenCoordInfos[_index];
+}
+
+//==============================================================================
+void Skeleton::setTransformGenCoordType(TransformGenCoordType _type)
+{
+  mTransformGenCoordType = _type;
+}
+
+//==============================================================================
+TransformGenCoordType Skeleton::getTransformGenCoordType() const
+{
+  return mTransformGenCoordType;
+}
+
+//==============================================================================
+void Skeleton::setRotationGenCoordType(RotationGenCoordType _type)
+{
+  mRotationGenCoordType = _type;
+}
+
+//==============================================================================
+RotationGenCoordType Skeleton::getRotationGenCoordType() const
+{
+  return mRotationGenCoordType;
 }
 
 //==============================================================================

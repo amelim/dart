@@ -85,6 +85,89 @@ void BallJoint::setTransformFromChildBodyNode(const Eigen::Isometry3d& _T)
 }
 
 //==============================================================================
+void BallJoint::setPositions(const Eigen::VectorXd& _positions)
+{
+  assert(mSkeleton != nullptr);
+  assert(_positions.size() == 3);
+
+  if (_positions.size() != (int)getNumDofs())
+  {
+    dterr << "setPositions positions's size[" << _positions.size()
+          << "] is different with the dof [" << getNumDofs() << "]"
+          << std::endl;
+    return;
+  }
+
+  RotationGenCoordType type = mSkeleton->getRotationGenCoordType();
+
+  switch (type)
+  {
+    case RotationGenCoordType::SO3_LIE_ALGEBRA:
+      mR.linear() = math::expMapRot(_positions.head<3>());
+      mPositions = _positions.head<3>();
+      break;
+    case RotationGenCoordType::EULER_INTRINSIC_XYZ:
+      mR.linear() = math::eulerXYZToMatrix(_positions.head<3>());
+      mPositions = math::logMap(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_INTRINSIC_ZYX:
+      mR.linear() = math::eulerZYXToMatrix(_positions.head<3>());
+      mPositions = math::logMap(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_EXTRINSIC_XYZ:
+      mR.linear()
+          = math::eulerZYXToMatrix(_positions.head<3>().reverse());
+      mPositions = math::logMap(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_EXTRINSIC_ZYX:
+      mR.linear()
+          = math::eulerXYZToMatrix(_positions.head<3>().reverse());
+      mPositions = math::logMap(mR.linear());
+      break;
+    default:
+      dterr << "Invalid generalized coordinate type for rotation matrix."
+            << std::endl;
+      break;
+  }
+
+}
+
+//==============================================================================
+Eigen::VectorXd BallJoint::getPositions() const
+{
+  Eigen::VectorXd genPositions = Eigen::VectorXd::Zero(3);
+
+  RotationGenCoordType type = mSkeleton->getRotationGenCoordType();
+
+  switch (type)
+  {
+    case RotationGenCoordType::SO3_LIE_ALGEBRA:
+      genPositions.head<3>() = math::logMap(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_INTRINSIC_XYZ:
+      genPositions.head<3>() = math::matrixToEulerXYZ(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_INTRINSIC_ZYX:
+      genPositions.head<3>() = math::matrixToEulerZYX(mR.linear());
+      break;
+    case RotationGenCoordType::EULER_EXTRINSIC_XYZ:
+      genPositions.head<3>()
+          = math::matrixToEulerZYX(mR.linear()).reverse();
+      break;
+    case RotationGenCoordType::EULER_EXTRINSIC_ZYX:
+      genPositions.head<3>()
+          = math::matrixToEulerXYZ(mR.linear()).reverse();
+      break;
+    default:
+      dterr << "Invalid generalized coordinate type for rotation matrix."
+            << std::endl;
+      break;
+  }
+
+  return genPositions;
+}
+
+//==============================================================================
 void BallJoint::integratePositions(double _dt)
 {
   mR.linear() = mR.linear() * math::expMapRot(mVelocities * _dt);

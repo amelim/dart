@@ -92,7 +92,7 @@ public:
   virtual void setPositions(const Eigen::VectorXd& _positions);
 
   // Documentation inherited
-  virtual Eigen::VectorXd getPositions() const;
+  virtual Eigen::VectorXd getPositions() const override;
 
   // Documentation inherited
   virtual void resetPositions();
