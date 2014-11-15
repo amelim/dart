@@ -34,6 +34,10 @@ init:
   - echo $BUILD_CORE_ONLY
   - echo %configuration%
   - echo %BUILD_CORE_ONLY%
+  - cmd: cd c:\Libraries\boost
+  - cmd: dir
+  - cmd: cd $BOOST_ROOT
+  - cmd: dir
   #- echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
