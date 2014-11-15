@@ -26,8 +26,8 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
-  - echo BOOST_ROOT: ${BOOST_ROOT}
-  - echo BOOST_LIBRARYDIR: ${BOOST_LIBRARYDIR}
+  - cmd: echo BOOST_ROOT: $BOOST_ROOT
+  - cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
   - cmd: cd ${BOOST_ROOT}
   - cmd: dir
   - cmd: cd ${BOOST_LIBRARYDIR}
