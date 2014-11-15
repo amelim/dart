@@ -38,6 +38,8 @@ init:
   - cmd: dir
   - cmd: cd $BOOST_ROOT
   - cmd: dir
+  - cmd: cd %BOOST_ROOT%
+  - cmd: dir
   #- echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
