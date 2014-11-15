@@ -26,10 +26,11 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
-  - TEST_VAR=ON
-  - echo $TEST_VAR
-  - echo BOOST_ROOT:
+  - echo BOOST_ROOT
   - echo $BOOST_ROOT
+  - echo ${BOOST_ROOT}
+  - echo $env:BOOST_ROOT
+  - echo "$BOOST_ROOT"
   #- echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
