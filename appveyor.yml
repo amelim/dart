@@ -26,31 +26,6 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
-  - echo BOOST_ROOT
-  - echo $BOOST_ROOT
-  - echo ${BOOST_ROOT}
-  - echo $env:BOOST_ROOT
-  - echo "$BOOST_ROOT"
-  - echo $BUILD_CORE_ONLY
-  - echo "$BUILD_CORE_ONLY"
-  - echo %configuration%
-  - echo %BUILD_CORE_ONLY%
-  - echo "%BUILD_CORE_ONLY%"
-  - cmd: cd c:\Libraries\boost
-  - cmd: dir
-  - cmd: cd "%BOOST_ROOT%"
-  - cmd: dir
-  - cmd: cd "{BOOST_ROOT}"
-  - cmd: dir
-  - cmd: cd $BOOST_ROOT
-  - cmd: dir
-  #- echo BOOST_ROOT: $BOOST_ROOT
-  #- cmd: echo BOOST_ROOT: $BOOST_ROOT
-  #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
-  #- cmd: cd ${BOOST_ROOT}
-  #- cmd: dir
-  #- cmd: cd ${BOOST_LIBRARYDIR}
-  #- cmd: dir
 
 # clone directory
 clone_folder: C:\projects\dart
@@ -73,19 +48,11 @@ install:
 
 # scripts to run before build
 before_build:
-  - echo BOOST_ROOT
-  - echo $BOOST_ROOT
-  - echo ${BOOST_ROOT}
-  - echo $env:BOOST_ROOT
-  - echo "$BOOST_ROOT"
-  - echo $BUILD_CORE_ONLY
-  - echo %configuration%
-  - echo %BUILD_CORE_ONLY%
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  - cmd: if "%platform%"=="Win32" cmake -G "Visual Studio 11"       -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY ..
-  - cmd: if "%platform%"=="x64"   cmake -G "Visual Studio 11 Win64" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY ..
+  - cmd: if "%platform%"=="Win32" cmake -G "Visual Studio 11"       -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" ..
+  - cmd: if "%platform%"=="x64"   cmake -G "Visual Studio 11 Win64" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY="%BUILD_CORE_ONLY%" -DBOOST_ROOT="%BOOST_ROOT%" -DBOOST_LIBRARYDIR="%BOOST_LIBRARYDIR%" ..
   
 build:
   project: C:\projects\dart\build\dart.sln
