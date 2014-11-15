@@ -52,7 +52,7 @@ install:
 
 # scripts to run before build
 before_build:
-  - cmd: echo "BOOST_ROOT: "BOOST_ROOT
+  - cmd: echo "BOOST_ROOT: "$BOOST_ROOT
   - cmd: echo "BOOST_LIBRARYDIR: "$BOOST_LIBRARYDIR
   - cmd: cd C:\projects\dart
   - cmd: md build
