@@ -63,6 +63,14 @@ install:
 
 # scripts to run before build
 before_build:
+  - echo BOOST_ROOT
+  - echo $BOOST_ROOT
+  - echo ${BOOST_ROOT}
+  - echo $env:BOOST_ROOT
+  - echo "$BOOST_ROOT"
+  - echo $BUILD_CORE_ONLY
+  - echo %configuration%
+  - echo %BUILD_CORE_ONLY%
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
