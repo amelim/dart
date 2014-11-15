@@ -50,8 +50,8 @@ before_build:
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
-  - cmd: if "%platform%"=="Win32" cmake -G "Visual Studio 11"       -DCMAKE_BUILD_TYPE=%configuration% ..
-  - cmd: if "%platform%"=="x64"   cmake -G "Visual Studio 11 Win64" -DCMAKE_BUILD_TYPE=%configuration% ..
+  - cmd: if "%platform%"=="Win32" cmake -G "Visual Studio 11"       -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY ..
+  - cmd: if "%platform%"=="x64"   cmake -G "Visual Studio 11 Win64" -DCMAKE_BUILD_TYPE=%configuration% -DBUILD_CORE_ONLY=$BUILD_CORE_ONLY ..
   
 build:
   project: C:\projects\dart\build\dart.sln
