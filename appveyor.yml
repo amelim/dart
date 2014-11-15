@@ -1,0 +1,51 @@
+# Operating system (build VM template)
+# os: Windows Server 2012 R2
+
+# build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
+platform: 
+  - Win32
+  - x64
+
+# build Configuration, i.e. Debug, Release, etc.
+configuration:
+  - Debug
+  - Release
+
+# scripts that are called at very beginning, before repo cloning
+init:
+  - cmd: cmake --version
+  - cmd: msbuild /version
+
+# clone directory
+clone_folder: C:\projects\dart
+
+# branches to build
+branches:
+  # whitelist
+  # only:
+  #   - master
+  # blacklist
+  except:
+    - gh-pages
+
+# scripts that run after cloning repository
+install:
+  - cmd: cd C:\projects
+  - ps: Start-FileDownload 'http://www.prism.gatech.edu/~tkunz3/DART-Prerequisites.msi'
+  - cmd: C:\projects\DART-Prerequisites.msi
+  - cmd: choco install doxygen.install
+
+# scripts to run before build
+before_build:
+  - cmd: cd C:\projects\dart
+  - cmd: md build
+  - cmd: cd build
+  - cmd: if "%platform%"=="Win32" cmake -G "Visual Studio 11"       -DCMAKE_BUILD_TYPE=%configuration% ..
+  - cmd: if "%platform%"=="x64"   cmake -G "Visual Studio 11 Win64" -DCMAKE_BUILD_TYPE=%configuration% ..
+  
+build:
+  project: C:\projects\dart\build\dart.sln
+  
+test_script:
+  - cmd: ctest -C Release -VV
+  - cmd: ctest -C Debug -VV
