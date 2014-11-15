@@ -3,6 +3,7 @@ version: "{build}"
 
 # Operating system (build VM template)
 # os: Windows Server 2012 R2
+os: unstable # for boost (see: http://help.appveyor.com/discussions/questions/455-boost-lib-depency)
 
 # build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
 platform: 
