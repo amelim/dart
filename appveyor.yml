@@ -30,8 +30,8 @@ init:
   - echo $TEST_VAR
   - echo BOOST_ROOT:
   - echo $BOOST_ROOT
-  - echo BOOST_ROOT: $BOOST_ROOT
-  - cmd: echo BOOST_ROOT: $BOOST_ROOT
+  #- echo BOOST_ROOT: $BOOST_ROOT
+  #- cmd: echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
   #- cmd: cd ${BOOST_ROOT}
   #- cmd: dir
