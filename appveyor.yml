@@ -31,6 +31,9 @@ init:
   - echo ${BOOST_ROOT}
   - echo $env:BOOST_ROOT
   - echo "$BOOST_ROOT"
+  - echo $BUILD_CORE_ONLY
+  - echo %configuration%
+  - echo %BUILD_CORE_ONLY%
   #- echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_ROOT: $BOOST_ROOT
   #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
