@@ -26,12 +26,17 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
+  - TEST_VAR=ON
+  - echo $TEST_VAR
+  - echo BOOST_ROOT:
+  - echo $BOOST_ROOT
+  - echo BOOST_ROOT: $BOOST_ROOT
   - cmd: echo BOOST_ROOT: $BOOST_ROOT
-  - cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
-  - cmd: cd ${BOOST_ROOT}
-  - cmd: dir
-  - cmd: cd ${BOOST_LIBRARYDIR}
-  - cmd: dir
+  #- cmd: echo BOOST_LIBRARYDIR: $BOOST_LIBRARYDIR
+  #- cmd: cd ${BOOST_ROOT}
+  #- cmd: dir
+  #- cmd: cd ${BOOST_LIBRARYDIR}
+  #- cmd: dir
 
 # clone directory
 clone_folder: C:\projects\dart
