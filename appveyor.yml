@@ -10,11 +10,10 @@ platform:
   - x64
 
 # specify custom environment variables
-matrix:
-  environment:
-    BUILD_CORE_ONLY: ON
-  environment:
-    BUILD_CORE_ONLY: OFF
+environment:
+  matrix:
+  - BUILD_CORE_ONLY: ON
+  - BUILD_CORE_ONLY: OFF
 
 # build Configuration, i.e. Debug, Release, etc.
 configuration:
