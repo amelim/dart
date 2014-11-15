@@ -26,9 +26,9 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
-  - cmd: cd ${BOOST_ROOT}
+  - cmd: cd "$env:BOOST_ROOT"
   - cmd: dir
-  - cmd: cd ${BOOST_LIBRARYDIR}
+  - cmd: cd "$env:BOOST_LIBRARYDIR"
   - cmd: dir
 
 # clone directory
@@ -52,8 +52,8 @@ install:
 
 # scripts to run before build
 before_build:
-  - cmd: echo "BOOST_ROOT: "${BOOST_ROOT}
-  - cmd: echo "BOOST_LIBRARYDIR: "${BOOST_LIBRARYDIR}
+  - cmd: echo "BOOST_ROOT: ""$env:BOOST_ROOT"
+  - cmd: echo "BOOST_LIBRARYDIR: ""$env:BOOST_LIBRARYDIR"
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
