@@ -26,11 +26,11 @@ configuration:
 init:
   - cmd: cmake --version
   - cmd: msbuild /version
-  - echo BOOST_ROOT: $env:BOOST_ROOT
-  - echo BOOST_LIBRARYDIR: $env:BOOST_LIBRARYDIR
-  - cmd: cd $env:BOOST_ROOT
+  - echo BOOST_ROOT: ${BOOST_ROOT}
+  - echo BOOST_LIBRARYDIR: ${BOOST_LIBRARYDIR}
+  - cmd: cd ${BOOST_ROOT}
   - cmd: dir
-  - cmd: cd $env:BOOST_LIBRARYDIR
+  - cmd: cd ${BOOST_LIBRARYDIR}
   - cmd: dir
 
 # clone directory
