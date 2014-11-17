@@ -48,6 +48,8 @@ install:
 
 # scripts to run before build
 before_build:
+  - cmd: cd "%BOOST_LIBRARYDIR%"
+  - cmd: dir
   - cmd: cd C:\projects\dart
   - cmd: md build
   - cmd: cd build
