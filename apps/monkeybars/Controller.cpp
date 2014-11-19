@@ -44,11 +44,16 @@
 #include "dart/constraint/ConstraintSolver.h"
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/WeldJointConstraint.h"
+#include <iostream>
 
+using namespace std;
+
+// ================================================================================================
 Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::ConstraintSolver* _constrSolver, double _t) {
   mSkel = _skel;
   mConstraintSolver = _constrSolver;
   mTimestep = _t;
+	mJump = false;
 
   int nDof = mSkel->getNumDofs();
   mKp = Eigen::MatrixXd::Identity(nDof, nDof);
@@ -96,22 +101,34 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
   mArch = 0;
 }
 
+// ================================================================================================
 Controller::~Controller() {
 }
 
+// ================================================================================================
 Eigen::VectorXd Controller::getTorques() {
   return mTorques;
 }
 
+// ================================================================================================
 double Controller::getTorque(int _index) {
   return mTorques[_index];
 }
 
+// ================================================================================================
 void Controller::setDesiredDof(int _index, double _val) {
   mDesiredDofs[_index] = _val;
 }
 
+// ================================================================================================
 void Controller::computeTorques(int _currentFrame) {
+	if(_currentFrame % 100 == 0) {
+		Eigen::Vector3d com = mSkel->getWorldCOM();
+		Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
+		cout << "frame: " << _currentFrame << endl;
+		cout << "\tcom: " << com.transpose() << endl;
+		cout << "\tqdot: " << com_dq.transpose() << endl;
+	}
   mCurrentFrame = _currentFrame;
   mTorques.setZero();
   if (mState == "STAND") {
@@ -128,6 +145,8 @@ void Controller::computeTorques(int _currentFrame) {
     release();
   } else if (mState == "SWING") {
     swing();
+  } else if (mState == "MOVE_LEGS_FORWARD") {
+    moveLegsForward();
   } else {
     std::cout << "Illegal state: " << mState << std::endl;
   }
@@ -138,6 +157,7 @@ void Controller::computeTorques(int _currentFrame) {
   }
 }
 
+// ================================================================================================
 void Controller::checkContactState() {
   mFootContact = NULL;
   mLeftHandContact = NULL;
@@ -164,6 +184,7 @@ void Controller::checkContactState() {
   }
 }
 
+// ================================================================================================
 void Controller::stand() {
   // Change to default standing pose
   mDesiredDofs = mDefaultPose;
@@ -179,6 +200,7 @@ void Controller::stand() {
   }
 }
 
+// ================================================================================================
 void Controller::crouch() {
   // Change to crouching pose
   mDesiredDofs = mDefaultPose;
@@ -207,6 +229,7 @@ void Controller::crouch() {
   }
 }
 
+// ================================================================================================
 void Controller::jump() {
   // Change to leaping pose
   mDesiredDofs = mDefaultPose;
@@ -237,6 +260,7 @@ void Controller::jump() {
   }
 }
 
+// ================================================================================================
 void Controller::reach() {
   // Change to reaching pose
   mDesiredDofs = mDefaultPose;
@@ -267,6 +291,7 @@ void Controller::reach() {
   }
 }
 
+// ================================================================================================
 void Controller::grab() {
   leftHandGrab();
   rightHandGrab();
@@ -294,6 +319,36 @@ void Controller::grab() {
   }
 }  
 
+// ================================================================================================
+void Controller::moveLegsForward() {
+  mDesiredDofs = mDefaultPose;
+  mDesiredDofs[6] = 1.0; 
+  mDesiredDofs[9] = 1.0; 
+  
+  stablePD();
+  mTimer--;
+
+	// Decide if you can reach the ground
+  Eigen::Vector3d com = mSkel->getWorldCOM();
+	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
+	bool jump = false;
+	if((com(0) > 1.3) && (com_dq(0) > 0.5)) jump = true;
+
+//	if(jump || mJump) {
+//		cout << "com(0): " << com(0) << ", com_dq(0): " << com_dq(0) << endl;
+//    std::cout << mCurrentFrame << ": " << "MOVE_LEGS_FORWARD -> RELEASE " << std::endl;
+//    mState = "RELEASE";
+//		mTimer = 0;
+//	}
+ // else 
+	if (mTimer == 0) {
+    mState = "SWING";
+		mTimer = 1500;
+    std::cout << mCurrentFrame << ": " << "MOVE_LEGS_FORWARD -> SWING" << std::endl;
+  }
+}
+
+// ================================================================================================
 void Controller::swing() {
   mDesiredDofs = mDefaultPose;
   mDesiredDofs[27] = 1;
@@ -307,12 +362,29 @@ void Controller::swing() {
   stablePD();
   mTimer--;
 
-  if (mTimer == 0) {
+	// Determine if need to jump
+  Eigen::Vector3d com = mSkel->getWorldCOM();
+	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
+	bool jump = false;
+	if((com(0) > 1.35) && (com_dq(0) > 0.3)) jump = true;
+
+	// JUMP!
+	if(jump || mJump) {
+		cout << "com(0): " << com(0) << ", com_dq(0): " << com_dq(0) << endl;
+    std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
     mState = "RELEASE";
-    std::cout << mCurrentFrame << ": " << "SWING -> RELEASE" << std::endl;
-  }
+		mTimer = 0;
+	}
+
+	// Move legs to increase velocity
+  else if (mTimer == 0) {
+		mState = "MOVE_LEGS_FORWARD";
+		mTimer = 500;
+		std::cout << mCurrentFrame << ": " << "SWING -> MOVE_LEGS_FORWARD" << std::endl;
+	}
 }
 
+// ================================================================================================
 void Controller::release() {
   leftHandRelease();
   rightHandRelease();
@@ -324,6 +396,7 @@ void Controller::release() {
   stablePD();
 }
   
+// ================================================================================================
 void Controller::stablePD() {
   Eigen::VectorXd q = mSkel->getPositions();
   Eigen::VectorXd dq = mSkel->getVelocities();
@@ -337,6 +410,7 @@ void Controller::stablePD() {
   mTorques += p + d - mKd * qddot * mTimestep;
 }
 
+// ================================================================================================
 void Controller::ankleStrategy() {
   Eigen::Vector3d com = mSkel->getWorldCOM();
   Eigen::Vector3d cop = mSkel->getBodyNode("h_heel_left")->getTransform()
@@ -363,11 +437,13 @@ void Controller::ankleStrategy() {
   }  
 }
 
+// ================================================================================================
 void Controller::virtualForce(Eigen::Vector3d _force, dart::dynamics::BodyNode* _bodyNode, Eigen::Vector3d _offset) {
   Eigen::MatrixXd jacobian = mSkel->getJacobian(_bodyNode, _offset);
   mTorques += jacobian.transpose() * _force;
 }
 
+// ================================================================================================
 void Controller::leftHandGrab() {  
   if (mLeftHandHold != NULL)
     return;
@@ -381,6 +457,7 @@ void Controller::leftHandGrab() {
   mLeftHandHold = hold;
 }
 
+// ================================================================================================
 void Controller::leftHandRelease() {
   if (mLeftHandHold == NULL)
     return;
@@ -389,6 +466,7 @@ void Controller::leftHandRelease() {
   mLeftHandHold = NULL;
 }
 
+// ================================================================================================
 void Controller::rightHandGrab() {  
   if (mRightHandHold != NULL)
     return;
@@ -403,6 +481,7 @@ void Controller::rightHandGrab() {
   mRightHandHold = hold;
 }
 
+// ================================================================================================
 void Controller::rightHandRelease() {
   if (mRightHandHold == NULL)
     return;
@@ -411,22 +490,27 @@ void Controller::rightHandRelease() {
   mRightHandHold = NULL;
 }
 
+// ================================================================================================
 dart::dynamics::Skeleton*Controller::getSkel() {
   return mSkel;
 }
 
+// ================================================================================================
 Eigen::VectorXd Controller::getDesiredDofs() {
   return mDesiredDofs;
 }
 
+// ================================================================================================
 Eigen::MatrixXd Controller::getKp() {
   return mKp;
 }
 
+// ================================================================================================
 Eigen::MatrixXd Controller::getKd() {
   return mKd;
 }
 
+// ================================================================================================
 Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vector3d _target) {
   Eigen::Vector3d offset = _bodyNode->getLocalCOM();
   Eigen::VectorXd oldPose = mSkel->getPositions();
@@ -444,7 +528,7 @@ Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vecto
   return newPose;
 }  
 
-    
+// ================================================================================================
 // 0-5 pelvis
 // 6-8 left hip
 // 9-11 right hip
@@ -465,3 +549,4 @@ Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vecto
 // 34 right elbow
 // 35 left wrist
 // 36 right wrist
+// ================================================================================================

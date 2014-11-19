@@ -55,6 +55,9 @@ class Skeleton;
 
 class Controller {
 public:
+	bool mJump;
+
+public:
   Controller(dart::dynamics::Skeleton*_skel, dart::constraint::ConstraintSolver* _constrSolver,
              double _t);
   virtual ~Controller();
@@ -74,6 +77,7 @@ protected:
   void jump();
   void reach();
   void grab();
+  void moveLegsForward();
   void swing();
   void release();
   void stablePD();

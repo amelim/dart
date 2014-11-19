@@ -81,6 +81,9 @@ void MyWindow::drawSkels() {
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
   switch (_key) {
+		case 'j':
+			mController->mJump = true;
+			break;
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating) {
