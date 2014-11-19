@@ -40,6 +40,7 @@
 
 #include <vector>
 
+#include "dart/simulation/World.h"
 #include <Eigen/Dense>
 
 namespace dart {
@@ -70,14 +71,18 @@ public:
   Eigen::VectorXd getDesiredDofs();
   Eigen::MatrixXd getKp();
   Eigen::MatrixXd getKd();
+	void setWorld(dart::simulation::World* world) { mWorld = world; }
 
-protected:
+	dart::simulation::World* mWorld;
+
   void stand();
   void crouch();
   void jump();
   void reach();
   void grab();
   void moveLegsForward();
+	void reachRightHand();
+	void reachLeftHand();
   void swing();
   void release();
   void stablePD();

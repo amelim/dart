@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
   // Create a window and link it to the world
   MyWindow window;
   window.setWorld(myWorld);
+	myController->setWorld(myWorld);
   window.setController(myController);
 
   std::cout << "space bar: simulation on/off" << std::endl;

@@ -35,6 +35,8 @@
  *   POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <iostream>
+#include <stdio.h>
 #include "MyWindow.h"
 
 #include "dart/math/Helpers.h"
@@ -43,6 +45,8 @@
 #include "dart/simulation/World.h"
 #include "dart/gui/GLFuncs.h"
 #include "dart/utils/FileInfoWorld.h"
+
+using namespace std;
 
 MyWindow::MyWindow(): SimWindow() {
   mForce = Eigen::Vector3d::Zero();
@@ -77,13 +81,38 @@ void MyWindow::drawSkels() {
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   for (unsigned int i = 0; i < mWorld->getNumSkeletons(); i++)
     mWorld->getSkeleton(i)->draw(mRI);
+
+	// Draw the vector to the next bar
+	if(mWorld->getSkeleton("bar3") != NULL) {
+		dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+		dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
+		Eigen::Vector3d goal = nextBar->getTransform().translation();
+		Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
+		goal(2) = hand(2);
+		double length = (goal - hand).norm();
+		Eigen::Vector3d dir = (goal - hand).normalized();
+		dart::gui::drawArrow3D(hand, dir, length, 0.02); 
+	}
+
 }
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
+	static int stepSize = 10;
   switch (_key) {
 		case 'j':
 			mController->mJump = true;
 			break;
+		case 'i': {
+	dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+			dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
+			Eigen::Vector3d goal = nextBar->getTransform().translation();
+			Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
+			goal(2) = hand(2);
+			Eigen::VectorXd pose = mController->ik(mSkel->getBodyNode("h_hand_right"), goal);
+		} break;
+
+		case '=': stepSize += 5; printf("step size: %d\n", stepSize); break;
+		case '-': stepSize -= 5; printf("step size: %d\n", stepSize); break;
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating) {
@@ -99,8 +128,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       }
       break;
     case '[':  // step backward
-      if (!mSimulating) {
-        mPlayFrame--;
+			if (!mSimulating) {
+				mPlayFrame-=stepSize;
         if (mPlayFrame < 0)
           mPlayFrame = 0;
         glutPostRedisplay();
@@ -108,7 +137,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
       break;
     case ']':  // step forwardward
       if (!mSimulating) {
-        mPlayFrame++;
+        mPlayFrame+=stepSize;
         if (mPlayFrame >= mWorld->getRecording()->getNumFrames())
           mPlayFrame = 0;
         glutPostRedisplay();

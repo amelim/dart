@@ -37,6 +37,7 @@
 
 #include "Controller.h"
 
+#include "dart/gui/GLFuncs.h"
 #include "dart/math/Helpers.h"
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/BodyNode.h"
@@ -45,6 +46,7 @@
 #include "dart/collision/CollisionDetector.h"
 #include "dart/constraint/WeldJointConstraint.h"
 #include <iostream>
+#include <stdio.h>
 
 using namespace std;
 
@@ -121,7 +123,9 @@ void Controller::setDesiredDof(int _index, double _val) {
 }
 
 // ================================================================================================
+bool releaseCalled = false;
 void Controller::computeTorques(int _currentFrame) {
+
 	if(_currentFrame % 100 == 0) {
 		Eigen::Vector3d com = mSkel->getWorldCOM();
 		Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
@@ -129,6 +133,8 @@ void Controller::computeTorques(int _currentFrame) {
 		cout << "\tcom: " << com.transpose() << endl;
 		cout << "\tqdot: " << com_dq.transpose() << endl;
 	}
+	if(releaseCalled && mRightHandContact) cout << "frame: " << _currentFrame << ", contact!" << endl;
+
   mCurrentFrame = _currentFrame;
   mTorques.setZero();
   if (mState == "STAND") {
@@ -147,6 +153,10 @@ void Controller::computeTorques(int _currentFrame) {
     swing();
   } else if (mState == "MOVE_LEGS_FORWARD") {
     moveLegsForward();
+  } else if (mState == "REACH_RIGHT_HAND") {
+    reachRightHand();
+  } else if (mState == "REACH_LEFT_HAND") {
+    reachLeftHand();
   } else {
     std::cout << "Illegal state: " << mState << std::endl;
   }
@@ -334,13 +344,6 @@ void Controller::moveLegsForward() {
 	bool jump = false;
 	if((com(0) > 1.3) && (com_dq(0) > 0.5)) jump = true;
 
-//	if(jump || mJump) {
-//		cout << "com(0): " << com(0) << ", com_dq(0): " << com_dq(0) << endl;
-//    std::cout << mCurrentFrame << ": " << "MOVE_LEGS_FORWARD -> RELEASE " << std::endl;
-//    mState = "RELEASE";
-//		mTimer = 0;
-//	}
- // else 
 	if (mTimer == 0) {
     mState = "SWING";
 		mTimer = 1500;
@@ -368,15 +371,24 @@ void Controller::swing() {
 	bool jump = false;
 	if((com(0) > 1.35) && (com_dq(0) > 0.3)) jump = true;
 
-	// JUMP!
+	// Jump or move to the next bar if possible
 	if(jump || mJump) {
-		cout << "com(0): " << com(0) << ", com_dq(0): " << com_dq(0) << endl;
-    std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
-    mState = "RELEASE";
-		mTimer = 0;
+
+		// Check if there is a second bar; if not, jump
+		if(mWorld->getSkeleton("bar2") == NULL) {
+			std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
+			mState = "RELEASE";
+			mTimer = 0;
+		}
+
+		// Otherwise, move to the next bar
+		else {
+			std::cout << mCurrentFrame << ": " << "SWING -> REACH_RIGHT_HAND" << std::endl;
+			mState = "REACH_RIGHT_HAND";
+		}
 	}
 
-	// Move legs to increase velocity
+	// If not ready to jump, move legs to increase velocity
   else if (mTimer == 0) {
 		mState = "MOVE_LEGS_FORWARD";
 		mTimer = 500;
@@ -385,7 +397,52 @@ void Controller::swing() {
 }
 
 // ================================================================================================
+void Controller::reachLeftHand() {
+
+	stablePD();
+}
+
+// ================================================================================================
+void Controller::reachRightHand() {
+	
+	// Release the left hand
+	static int counter = 0;
+	if(counter == 0) rightHandRelease();
+	counter++;
+	//cout << "reach right hand, counter: " << counter << endl;
+
+	// Move to the new object
+	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
+	Eigen::Vector3d goal = nextBar->getTransform().translation();
+	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
+	goal(2) = hand(2);
+	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
+	mDesiredDofs[30] = pose[30];
+	mDesiredDofs[31] = pose[31];
+	mDesiredDofs[32] = pose[32];
+	mDesiredDofs[34] = pose[34];
+	mDesiredDofs[36] = pose[36];
+	mDesiredDofs[38] = pose[38];
+
+	mDesiredDofs[33] = M_PI / 3.0;// / 2.0;
+//	mDesiredDofs[35] = M_PI / 3.0;// / 2.0;
+//	mDesiredDofs[27] = M_PI / 3.0;// / 2.0;
+
+	mKp(33,33) = 400.0;
+
+	// Attempt to hold the next object and if you can, change state
+	if(counter > 500) rightHandGrab();
+	if((counter > 500) && (mRightHandHold != NULL)) {
+    mState = "REACH_LEFT_HAND";
+    std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
+	}
+	
+	stablePD();
+}
+
+// ================================================================================================
 void Controller::release() {
+	releaseCalled = true;
   leftHandRelease();
   rightHandRelease();
 
@@ -515,13 +572,24 @@ Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vecto
   Eigen::Vector3d offset = _bodyNode->getLocalCOM();
   Eigen::VectorXd oldPose = mSkel->getPositions();
   Eigen::VectorXd newPose;
+	size_t rightArmIds [] = {30, 31, 32, 34, 36, 38};
+	double improvement = 1000.0;
+	double lastNorm;
   for (int i = 0; i < 200; i++) {
     Eigen::Vector3d diff = _bodyNode->getWorldCOM() - _target;
-    Eigen::MatrixXd jacobian = mSkel->getJacobian(_bodyNode, offset);
-    jacobian.block(0, 0, 3, 6).setZero();
+		double norm = diff.norm();
+		// printf("\t%lf\n", diff.norm());
+    Eigen::MatrixXd jFull= mSkel->getJacobian(_bodyNode, offset);
+    // jacobian.block(0, 0, 3, 6).setZero();
+		Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero(jFull.rows(), jFull.cols());
+		for(size_t i = 0; i < 6; i++)
+			jacobian.block<3,1>(0,rightArmIds[i]) = jFull.block<3,1>(0, rightArmIds[i]);
     newPose = mSkel->getPositions() - 0.1 * 2 * jacobian.transpose() * diff;
     mSkel->setPositions(newPose); 
     mSkel->computeForwardKinematics(true, false, false); // DART updates all the transformations based on newPose
+		if(i > 1)
+		if(fabs(norm - lastNorm) < 0.001) break;
+		lastNorm = norm;
   }
   mSkel->setPositions(oldPose);
   mSkel->computeForwardKinematics(true, false, false);
