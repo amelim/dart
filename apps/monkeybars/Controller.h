@@ -57,6 +57,7 @@ class Skeleton;
 class Controller {
 public:
 	bool mJump;
+	std::string barName;
 
 public:
   Controller(dart::dynamics::Skeleton*_skel, dart::constraint::ConstraintSolver* _constrSolver,
@@ -94,6 +95,9 @@ public:
   void rightHandGrab();
   void leftHandRelease();
   void rightHandRelease();
+	void moveHandsApart();
+	void resetArmGains ();
+	void pullUp ();
 
   dart::dynamics::Skeleton* mSkel;
   dart::constraint::ConstraintSolver* mConstraintSolver;

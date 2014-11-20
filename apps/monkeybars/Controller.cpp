@@ -50,12 +50,14 @@
 
 using namespace std;
 
+
 // ================================================================================================
 Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::ConstraintSolver* _constrSolver, double _t) {
   mSkel = _skel;
   mConstraintSolver = _constrSolver;
   mTimestep = _t;
 	mJump = false;
+barName = "bar3";
 
   int nDof = mSkel->getNumDofs();
   mKp = Eigen::MatrixXd::Identity(nDof, nDof);
@@ -338,12 +340,6 @@ void Controller::moveLegsForward() {
   stablePD();
   mTimer--;
 
-	// Decide if you can reach the ground
-  Eigen::Vector3d com = mSkel->getWorldCOM();
-	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
-	bool jump = false;
-	if((com(0) > 1.3) && (com_dq(0) > 0.5)) jump = true;
-
 	if (mTimer == 0) {
     mState = "SWING";
 		mTimer = 1500;
@@ -353,6 +349,11 @@ void Controller::moveLegsForward() {
 
 // ================================================================================================
 void Controller::swing() {
+
+	int counter = 0;
+	counter++;
+	bool dbg = counter % 25;
+
   mDesiredDofs = mDefaultPose;
   mDesiredDofs[27] = 1;
   mDesiredDofs[28] = -2.6;
@@ -369,8 +370,18 @@ void Controller::swing() {
   Eigen::Vector3d com = mSkel->getWorldCOM();
 	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
 	bool jump = false;
-	if((com(0) > 1.35) && (com_dq(0) > 0.3)) jump = true;
+	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
+	Eigen::Vector3d barLoc = nextBar->getTransform().translation();
+	if((com(0) > (barLoc(0) + 0.15)) && (com_dq(0) > 0.1)) jump = true;
+	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc(0), com_dq(0));
 
+	static double lastCOM = com(0); 
+	static double lastCOMdq = com_dq(0);
+	static bool startCounting = false;
+	if(!startCounting) 
+		startCounting = (lastCOMdq < 0 && (com_dq(0) > 0));
+	static int bla = 0;
+	if(startCounting) bla++;
 	// Jump or move to the next bar if possible
 	if(jump || mJump) {
 
@@ -379,24 +390,55 @@ void Controller::swing() {
 			std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
 			mState = "RELEASE";
 			mTimer = 0;
+			bla = 0;
+			startCounting = false;
 		}
 
 		// Otherwise, move to the next bar
 		else {
+			bla = 0;
+			startCounting = false;
 			std::cout << mCurrentFrame << ": " << "SWING -> REACH_RIGHT_HAND" << std::endl;
 			mState = "REACH_RIGHT_HAND";
 		}
 	}
 
 	// If not ready to jump, move legs to increase velocity
-  else if (mTimer == 0) {
+//  else if (mTimer == 0) {
+  // else if (com(0) > (barLoc(0) - 0.1)) {
+ // else if ((com(0) > (barLoc(0) - 0.2)) && (com_dq(0) > 0.0)){
+
+	// else if(lastCOM <= com(0) && (com_dq(0) > 0)) {
+	else if (bla > 200) {
 //		mState = "REACH_LEFT_HAND";
 //		std::cout << mCurrentFrame << ": " << "SWING -> REACH_LEFT_HAND" << std::endl;
 
+		bla = 0;
+		startCounting = false;
+		cout << "hi?" << endl;
 		mState = "MOVE_LEGS_FORWARD";
 		mTimer = 500;
 		std::cout << mCurrentFrame << ": " << "SWING -> MOVE_LEGS_FORWARD" << std::endl;
 	}
+
+	lastCOM = com(0);
+	lastCOMdq = com_dq(0);
+}
+
+// ================================================================================================
+void Controller::resetArmGains () {
+
+	// Make shoulders and elbows loose
+  for (int i = 27; i < 35; i++) {
+    mKp(i, i) = 20.0;
+    mKd(i, i) = 2.0;
+  }
+
+  // Make wrists even looser
+  for (int i = 35; i < 39; i++) {
+    mKp(i, i) = 1.0;
+    mKd(i, i) = 0.1;
+  }
 }
 
 // ================================================================================================
@@ -409,8 +451,8 @@ void Controller::reachLeftHand() {
 	if(counter % 100 == 0) cout << "reachLeftHand counter: " << counter << endl;
 
 	// Move to the new object
-	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
-	Eigen::Vector3d goal = nextBar->getTransform().translation();
+	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
+	Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, -0.25);
 	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_left")->getTransform().translation();
 	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_left"), goal);
 	size_t leftArmIds [] = {27, 28, 29, 33, 35, 37};
@@ -429,6 +471,25 @@ void Controller::reachLeftHand() {
 	mKp(34,34) = 400.0;
 	mKd(34,34) = 40.0;
 
+	// Attempt to hold the next object and if you can, change state
+	if(counter > 500) leftHandGrab();
+	if((counter > 500) && (mLeftHandHold != NULL)) {
+		counter = 0;
+		mKp(33,33) = 20.0;
+    mState = "SWING";
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> SWING" << std::endl;
+		barName = "bar4";
+		resetArmGains();
+
+		leftHandRelease();
+		Eigen::VectorXd state = mSkel->getState();
+		for(size_t i = 0; i < 6; i++)
+			state[leftArmIds[i]] = pose[leftArmIds[i]];
+		mSkel->setState(state);
+		leftHandGrab();
+	
+	}
+	
 	stablePD();
 }
 
@@ -441,10 +502,10 @@ void Controller::reachRightHand() {
 	counter++;
 
 	// Move to the new object
-	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
-	Eigen::Vector3d goal = nextBar->getTransform().translation();
+	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
+	Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, 0.25);
 	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
-	goal(2) = hand(2);
+	// goal(2) = hand(2);
 	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
 	size_t rightArmIds [] = {30, 31, 32, 34, 36, 38};
 	for(size_t i = 0; i < 6; i++)
@@ -460,6 +521,16 @@ void Controller::reachRightHand() {
 		mKp(33,33) = 20.0;
     mState = "REACH_LEFT_HAND";
     std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
+		counter = 0;
+
+		// Cheat and realign the hand - which is not really cheating in real life
+		rightHandRelease();
+		Eigen::VectorXd state = mSkel->getState();
+		for(size_t i = 0; i < 6; i++)
+			state[rightArmIds[i]] = pose[rightArmIds[i]];
+		mSkel->setState(state);
+		rightHandGrab();
+		
 	}
 	
 	stablePD();
