@@ -390,6 +390,9 @@ void Controller::swing() {
 
 	// If not ready to jump, move legs to increase velocity
   else if (mTimer == 0) {
+//		mState = "REACH_LEFT_HAND";
+//		std::cout << mCurrentFrame << ": " << "SWING -> REACH_LEFT_HAND" << std::endl;
+
 		mState = "MOVE_LEGS_FORWARD";
 		mTimer = 500;
 		std::cout << mCurrentFrame << ": " << "SWING -> MOVE_LEGS_FORWARD" << std::endl;
@@ -399,17 +402,43 @@ void Controller::swing() {
 // ================================================================================================
 void Controller::reachLeftHand() {
 
+	// Let go of the left hand
+	static int counter = 0;
+	if(counter == 0) leftHandRelease();
+	counter++;
+	if(counter % 100 == 0) cout << "reachLeftHand counter: " << counter << endl;
+
+	// Move to the new object
+	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
+	Eigen::Vector3d goal = nextBar->getTransform().translation();
+	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_left")->getTransform().translation();
+	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_left"), goal);
+	size_t leftArmIds [] = {27, 28, 29, 33, 35, 37};
+	for(size_t i = 0; i < 6; i++)
+		mDesiredDofs[leftArmIds[i]] = pose[leftArmIds[i]];
+
+	// Make shoulders and elbows loose
+  for (int i = 0; i < 6; i++) {
+		int j = leftArmIds[i];
+    mKp(j, j) = 400.0;
+    mKd(j, j) = 40.0;
+  }
+
+	// Break the left elbow to get the right hand higher
+	mDesiredDofs[34] = 2* M_PI / 3.0;
+	mKp(34,34) = 400.0;
+	mKd(34,34) = 40.0;
+
 	stablePD();
 }
 
 // ================================================================================================
 void Controller::reachRightHand() {
 	
-	// Release the left hand
+	// Release the right hand
 	static int counter = 0;
 	if(counter == 0) rightHandRelease();
 	counter++;
-	//cout << "reach right hand, counter: " << counter << endl;
 
 	// Move to the new object
 	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
@@ -417,22 +446,18 @@ void Controller::reachRightHand() {
 	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
 	goal(2) = hand(2);
 	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
-	mDesiredDofs[30] = pose[30];
-	mDesiredDofs[31] = pose[31];
-	mDesiredDofs[32] = pose[32];
-	mDesiredDofs[34] = pose[34];
-	mDesiredDofs[36] = pose[36];
-	mDesiredDofs[38] = pose[38];
+	size_t rightArmIds [] = {30, 31, 32, 34, 36, 38};
+	for(size_t i = 0; i < 6; i++)
+		mDesiredDofs[rightArmIds[i]] = pose[rightArmIds[i]];
 
-	mDesiredDofs[33] = M_PI / 3.0;// / 2.0;
-//	mDesiredDofs[35] = M_PI / 3.0;// / 2.0;
-//	mDesiredDofs[27] = M_PI / 3.0;// / 2.0;
-
+	// Break the left elbow to get the right hand higher
+	mDesiredDofs[33] = M_PI / 3.0;
 	mKp(33,33) = 400.0;
 
 	// Attempt to hold the next object and if you can, change state
 	if(counter > 500) rightHandGrab();
 	if((counter > 500) && (mRightHandHold != NULL)) {
+		mKp(33,33) = 20.0;
     mState = "REACH_LEFT_HAND";
     std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
 	}
@@ -573,8 +598,13 @@ Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vecto
   Eigen::VectorXd oldPose = mSkel->getPositions();
   Eigen::VectorXd newPose;
 	size_t rightArmIds [] = {30, 31, 32, 34, 36, 38};
+	size_t leftArmIds [] = {27, 28, 29, 33, 35, 37};
+	size_t armIds [6];
+	bool right = (_bodyNode->getName().compare("h_hand_right") == 0);
+	for(size_t i = 0; i < 6; i++) armIds[i] = right ? rightArmIds[i] : leftArmIds[i];
 	double improvement = 1000.0;
-	double lastNorm;
+	double lastNorm = 1000.0;
+	// printf("ik for %s\n", right ? "right" : "left");
   for (int i = 0; i < 200; i++) {
     Eigen::Vector3d diff = _bodyNode->getWorldCOM() - _target;
 		double norm = diff.norm();
@@ -583,12 +613,11 @@ Eigen::VectorXd Controller::ik(dart::dynamics::BodyNode* _bodyNode, Eigen::Vecto
     // jacobian.block(0, 0, 3, 6).setZero();
 		Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero(jFull.rows(), jFull.cols());
 		for(size_t i = 0; i < 6; i++)
-			jacobian.block<3,1>(0,rightArmIds[i]) = jFull.block<3,1>(0, rightArmIds[i]);
+			jacobian.block<3,1>(0,armIds[i]) = jFull.block<3,1>(0, armIds[i]);
     newPose = mSkel->getPositions() - 0.1 * 2 * jacobian.transpose() * diff;
     mSkel->setPositions(newPose); 
     mSkel->computeForwardKinematics(true, false, false); // DART updates all the transformations based on newPose
-		if(i > 1)
-		if(fabs(norm - lastNorm) < 0.001) break;
+		if(fabs(norm - lastNorm) < 0.0001) break;
 		lastNorm = norm;
   }
   mSkel->setPositions(oldPose);

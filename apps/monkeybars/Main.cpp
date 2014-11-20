@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
   // Create and initialize the world
   dart::simulation::World* myWorld
       = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/monkeybars1.skel");
+          DART_DATA_PATH"skel/monkeybars2.skel");
   assert(myWorld != NULL);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

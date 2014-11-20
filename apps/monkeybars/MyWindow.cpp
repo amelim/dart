@@ -94,6 +94,16 @@ void MyWindow::drawSkels() {
 		dart::gui::drawArrow3D(hand, dir, length, 0.02); 
 	}
 
+	if(mWorld->getSkeleton("bar3") != NULL) {
+		dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+		dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
+		Eigen::Vector3d goal = nextBar->getTransform().translation();
+		Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_left")->getTransform().translation();
+		double length = (goal - hand).norm();
+		Eigen::Vector3d dir = (goal - hand).normalized();
+		dart::gui::drawArrow3D(hand, dir, length, 0.02); 
+	}
+
 }
 
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
