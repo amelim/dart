@@ -50,9 +50,11 @@
 
 int main(int argc, char* argv[]) {
   // Create and initialize the world
+	char buf [1024];
+	sprintf(buf, "%sskel/monkeybars%s.skel", DART_DATA_PATH, argv[1]);
   dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readWorld(
-          DART_DATA_PATH"skel/monkeybars2.skel");
+      = dart::utils::SkelParser::readWorld(buf);
+//          DART_DATA_PATH"skel/monkeybars2.skel");
   assert(myWorld != NULL);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);

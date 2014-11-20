@@ -362,7 +362,15 @@ void Controller::swing() {
   mDesiredDofs[33] = 0.4;
   mDesiredDofs[34] = 0.4;
   mDesiredDofs[13] = 0.0; 
-  
+
+	int waitTime = 200;
+	if(mWorld->getSkeleton("trapeze") != NULL) {
+		for (int i = 27; i < 39; i++) {
+			mKp(i, i) = 400.0;
+			mKd(i, i) = 40.0;
+		}
+		waitTime = 500;
+	}
   stablePD();
   mTimer--;
 
@@ -370,10 +378,11 @@ void Controller::swing() {
   Eigen::Vector3d com = mSkel->getWorldCOM();
 	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
 	bool jump = false;
-	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
-	Eigen::Vector3d barLoc = nextBar->getTransform().translation();
-	if((com(0) > (barLoc(0) + 0.15)) && (com_dq(0) > 1.1)) jump = true;
-	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc(0), com_dq(0));
+//	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
+//	Eigen::Vector3d barLoc = nextBar->getTransform().translation();
+	double barLoc = 1.2;
+	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1)) jump = true;
+	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
 
 	static double lastCOM = com(0); 
 	static double lastCOMdq = com_dq(0);
@@ -409,7 +418,7 @@ void Controller::swing() {
  // else if ((com(0) > (barLoc(0) - 0.2)) && (com_dq(0) > 0.0)){
 
 	// else if(lastCOM <= com(0) && (com_dq(0) > 0)) {
-	else if (bla > 200) {
+	else if (bla > waitTime) {
 //		mState = "REACH_LEFT_HAND";
 //		std::cout << mCurrentFrame << ": " << "SWING -> REACH_LEFT_HAND" << std::endl;
 
