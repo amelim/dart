@@ -114,13 +114,31 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 		case 'j':
 			mController->mJump = true;
 			break;
+		case 'z': {
+			dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+			Eigen::VectorXd state = mSkel->getState();
+			state = Eigen::VectorXd::Zero(state.rows());
+			mSkel->setState(state);
+			mSkel->computeForwardKinematics(true, false, false);
+		} break;
+		case 'f': {
+			dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+			Eigen::VectorXd state = mSkel->getState();
+			state[27] = M_PI / 3.0;
+			state[33] = M_PI / 3.0;
+			state[35] = M_PI_2;
+			state[37] = M_PI / 3.0;
+			mSkel->setState(state);
+			mSkel->computeForwardKinematics(true, false, false);
+		} break;
 		case 'i': {
-	dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
-			dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar3")->getBodyNode("box");
-			Eigen::Vector3d goal = nextBar->getTransform().translation();
+			dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
+			dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton("bar1")->getBodyNode("box");
+			Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0, 0, -0.25);
 			Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
-			goal(2) = hand(2);
 			Eigen::VectorXd pose = mController->ik(mSkel->getBodyNode("h_hand_right"), goal);
+			mSkel->setState(pose);
+			mSkel->computeForwardKinematics(true, false, false);
 		} break;
 
 		case '=': stepSize += 5; printf("step size: %d\n", stepSize); break;

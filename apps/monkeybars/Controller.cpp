@@ -372,7 +372,7 @@ void Controller::swing() {
 	bool jump = false;
 	dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName.c_str())->getBodyNode("box");
 	Eigen::Vector3d barLoc = nextBar->getTransform().translation();
-	if((com(0) > (barLoc(0) + 0.15)) && (com_dq(0) > 0.1)) jump = true;
+	if((com(0) > (barLoc(0) + 0.15)) && (com_dq(0) > 1.1)) jump = true;
 	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc(0), com_dq(0));
 
 	static double lastCOM = com(0); 
@@ -386,7 +386,7 @@ void Controller::swing() {
 	if(jump || mJump) {
 
 		// Check if there is a second bar; if not, jump
-		if(mWorld->getSkeleton("bar2") == NULL) {
+		if(true ||  mWorld->getSkeleton("bar2") == NULL) {
 			std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
 			mState = "RELEASE";
 			mTimer = 0;
