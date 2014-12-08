@@ -142,9 +142,9 @@ void Controller::computeTorques(int _currentFrame) {
 	if(_currentFrame % 100 == 0) {
 		Eigen::Vector3d com = mSkel->getWorldCOM();
 		Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
-		cout << "frame: " << _currentFrame << endl;
-		cout << "\tcom: " << com.transpose() << endl;
-		cout << "\tqdot: " << com_dq.transpose() << endl;
+		//cout << "frame: " << _currentFrame << endl;
+		//cout << "\tcom: " << com.transpose() << endl;
+		//cout << "\tqdot: " << com_dq.transpose() << endl;
 	}
 	if(releaseCalled && mRightHandContact) cout << "frame: " << _currentFrame << ", contact!" << endl;
 
@@ -339,25 +339,21 @@ void Controller::grab() {
   mTimer--;
 
   if (mTimer == 0) {
-    mState = "SWING";
-    mTimer = 200;
-    std::cout << mCurrentFrame << ": " << "GRAB -> SWING" << std::endl;
-		Eigen::VectorXd state = mSkel->getState();
-		leftWrist = state(35);
-		rightWrist = state(36);
-    //mState = "HANG";
-    //mTimer = 2500;
-    //std::cout << mCurrentFrame << ": " << "GRAB -> HANG" << std::endl;
+    //mState = "SWING";
+    //mTimer = 200;
+    //std::cout << mCurrentFrame << ": " << "GRAB -> SWING" << std::endl;
+		//Eigen::VectorXd state = mSkel->getState();
+		//leftWrist = state(35);
+		//rightWrist = state(36);
+    mState = "HANG";
+    mTimer = 2500;
+    std::cout << mCurrentFrame << ": " << "GRAB -> HANG" << std::endl;
   }
 }  
 
 // ================================================================================================
 void Controller::hang() {
 
-	static int counter = 0;
-	bool debug = (counter++ % 100 == 0) ;
-	if(debug)
-		printf("wrists: (%lf, %lf)\n", leftWrist, rightWrist);
 	for (int i = 27; i < 39; i++) {
 		mKp(i, i) = 400.0;
 		mKd(i, i) = 40.0;
@@ -367,31 +363,28 @@ void Controller::hang() {
 
 	static bool released = false;
 
-	if(mTimer == 0) {
+	if(mTimer < 0) {
 	
-		Eigen::VectorXd state = mSkel->getState();
-		printf("state0: (%lf, %lf)\n", state(35), state(36));
-		state(35) = leftWrist;
-		state(36) = rightWrist;
-		printf("state1: (%lf, %lf)\n", state(35), state(36));
-		mSkel->setState(state);
-		mSkel->computeForwardKinematics(true, true, false);
-		printf("\n\n\n\nRESET\n\n\n\n\n");
+		//Eigen::VectorXd state = mSkel->getState();
+		//printf("state0: (%lf, %lf)\n", state(35), state(36));
+		//state(35) = leftWrist;
+		//state(36) = rightWrist;
+		//printf("state1: (%lf, %lf)\n", state(35), state(36));
+		//mSkel->setState(state);
+		//mSkel->computeForwardKinematics(true, true, false);
+		//printf("\n\n\n\nRESET\n\n\n\n\n");
 		
-		//// Release right hand after stabilization
-		//if(!released) {
-		//	rightHandRelease();
-		//	released = true;
-		//}
+		// Release right hand after stabilization
+		if(!released) {
+			rightHandRelease();
+			released = true;
+		}
 
-		//// Perform IK on the right hand to grasp properly
-		//else {
-
-		//}
-	}
-	else if(debug) {
-		Eigen::VectorXd state = mSkel->getState();
-		printf("state %d: (%lf, %lf)\n", counter, state(35), state(36));
+		// Perform IK on the right hand to grasp properly
+		else {
+			mState = "REACH_RIGHT_HAND";
+			std::cout << mCurrentFrame << ": " << "HANG -> REACH_RIGHT_HAND" << std::endl;
+		}
 	}
 }
 
@@ -560,26 +553,35 @@ void Controller::reachLeftHand() {
 	mKp(34,34) = 400.0;
 	mKd(34,34) = 40.0;
 
+	// Change the left scapula ...
+	mDesiredDofs[30] = -M_PI / 2;
+	mDesiredDofs[31] = M_PI / 2.0;
+  mKp(30, 30) = 400.0;
+  mKd(30, 30) = 40.0;
+  mKp(31, 31) = 400.0;
+  mKd(31, 31) = 40.0;
+	
 	// Attempt to hold the next object and if you can, change state
 	if(counter > 500) leftHandGrab();
 	if((counter > 500) && (mLeftHandHold != NULL)) {
 		counter = 0;
 		mKp(33,33) = 20.0;
+		currentBarTarget = min(currentBarTarget+1, barList.size() - 1);
+		mState = "REACH_RIGHT_HAND";
     //mState = "GRAB";
     //std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> GRAB" << std::endl;
-    mState = "HANG";
-    mTimer = 2500;
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> HANG" << std::endl;
-    currentBarTarget++;
+
+		// Check if both hands are in contact
+		if((mLeftHandHold != NULL) && (mRightHandHold != NULL)) {
+			mState = "SWING";	
+			mTimer = 200;
+			std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> SWING" << std::endl;
+		}
+//    mState = "HANG";
+//    mTimer = 2500;
+//    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> HANG" << std::endl;
 		//barName = "bar4";
 		resetArmGains();
-
-		leftHandRelease();
-		Eigen::VectorXd state = mSkel->getState();
-		for(size_t i = 0; i < 6; i++)
-			state[leftArmIds[i]] = pose[leftArmIds[i]];
-		mSkel->setState(state);
-		leftHandGrab();
 	}
 	
 	stablePD();
@@ -593,7 +595,7 @@ void Controller::reachRightHand() {
 	if(counter == 0) rightHandRelease();
 	counter++;
 
-	// Move to the new object
+	// Move the hand 25 cm to the right of the next bar's center
   dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
   Eigen::Vector3d goal = nextBar->getTransform().translation() +Eigen::Vector3d(0.0, 0.0, 0.25);
 	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
@@ -604,31 +606,32 @@ void Controller::reachRightHand() {
 		mDesiredDofs[rightArmIds[i]] = pose[rightArmIds[i]];
 
 	// Break the left elbow to get the right hand higher
-
   mDesiredDofs[33] = M_PI / 3.0;
   mKp(33, 33) = 400.0;
+	
+	// Change the left scapula ...
+	mDesiredDofs[27] = -M_PI / 4.0;
+	mDesiredDofs[28] = -M_PI / 2.0;
+  mKp(27, 27) = 400.0;
+  mKd(27, 27) = 40.0;
+  mKp(28, 28) = 400.0;
+  mKd(28, 28) = 40.0;
+	
 
 	// Attempt to hold the next object and if you can, change state
-	if(counter > 500) rightHandGrab();
+	static const int jumpLimit = 2500;
+	if(counter > jumpLimit) rightHandGrab();
 
-	if((counter > 500) && (mRightHandHold != NULL)) {
+	// If holding, try to hold with the left hand the same (?) bar
+	if((counter > jumpLimit) && (mRightHandHold != NULL)) {
+    currentBarTarget++;
 		mKp(33,33) = 20.0;
     mState = "REACH_LEFT_HAND";
     std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
 		counter = 0;
-
-		// Cheat and realign the hand - which is not really cheating in real life
-		rightHandRelease();
-		Eigen::VectorXd state = mSkel->getState();
-		for(size_t i = 0; i < 6; i++)
-			state[rightArmIds[i]] = pose[rightArmIds[i]];
-		mSkel->setState(state);
-		rightHandGrab();
-		
 	}
 
-  // Maybe try to reset if counter is too large?
-	
+	// Do controller stuff
 	stablePD();
 }
 
