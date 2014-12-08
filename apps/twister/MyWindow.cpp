@@ -2,8 +2,10 @@
 #include "dart/dynamics/Skeleton.h"
 #include "dart/dynamics/Marker.h"
 #include <iostream>
+#include <stdio.h>
 
 using namespace Eigen;
+using namespace std;
 using namespace dart::dynamics;
 
 void MyWindow::displayTimer(int _val)
@@ -25,13 +27,51 @@ void MyWindow::draw()
  
 }
 
+void MyWindow::printWeights() {
+
+	map <int, double>::iterator it = mWorld->weights.begin();
+	printf("weights: [\n");
+	for(; it != mWorld->weights.end(); it++) {
+		printf("\tmarker %d => weight %lf\n", it->first, it->second);
+	}
+	printf("]\n\n");
+	fflush(stdout);
+}
+
 void MyWindow::keyboard(unsigned char _key, int _x, int _y)
 {
+		const double deltaWeight = 0.05;
     switch(_key){
     case 'v':
         // TODO: Show or hide visualization.
         std::cout << "Visualization on/off" << std::endl;
         break;
+		case 'w':
+				if(mLastActiveMarker != -1) {
+					printf("Increasing weight of marker %d\n", mLastActiveMarker);
+					map <int, double>::iterator it = mWorld->weights.find(mLastActiveMarker);
+					if(it == mWorld->weights.end()) mWorld->weights[mLastActiveMarker] = 0.5;
+					double weight = mWorld->weights[mLastActiveMarker] + deltaWeight;
+					double newWeight = min(max(0.0, weight), 1.0);
+					mWorld->weights[mLastActiveMarker] = newWeight;
+				}
+				printWeights();
+				break;
+		case 's':
+				if(mLastActiveMarker != -1) {
+					printf("Decreasing weight of marker %d\n", mLastActiveMarker);
+					map <int, double>::iterator it = mWorld->weights.find(mLastActiveMarker);
+					if(it == mWorld->weights.end()) mWorld->weights[mLastActiveMarker] = 0.5;
+					double weight = mWorld->weights[mLastActiveMarker] - deltaWeight;
+					double newWeight = min(max(0.0, weight), 1.0);
+					mWorld->weights[mLastActiveMarker] = newWeight;
+				}
+				printWeights();
+				break;
+		case 'k':
+				mWorld->noBadKnees = !mWorld->noBadKnees;
+				printf("Allowing knees bend backward: %s\n", mWorld->noBadKnees ? "YES" : "NO");
+				break;
     default:
         Win3D::keyboard(_key, _x, _y);
     }
@@ -45,21 +85,25 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
         if (_button == GLUT_LEFT_BUTTON){
             if(mask == GLUT_ACTIVE_SHIFT) {
                 mZooming = true;
-            } else if (mask == GLUT_ACTIVE_ALT) {
+            } else if (mask == GLUT_ACTIVE_CTRL) {
                 mActiveMarker = coordsToMarker(_x, _y);
                 if (mActiveMarker != -1) {
                     mWorld->createConstraint(mActiveMarker);
                     glutTimerFunc(mDisplayTimeout, refreshTimer, 0);
+										mLastActiveMarker = mActiveMarker;
                 }
-            } else {
+            } 
+						else {
                 mRotate = true;
                 mTrackBall.startBall(_x, mWinHeight - _y);
             }
         } else if (_button == GLUT_RIGHT_BUTTON || _button == GLUT_MIDDLE_BUTTON) {
-            if(mask == GLUT_ACTIVE_ALT) {
+            if(mask == GLUT_ACTIVE_CTRL) {
                 mActiveMarker = coordsToMarker(_x, _y);                
-                if (mActiveMarker != -1) 
+                if (mActiveMarker != -1) {
                     mWorld->removeConstraint(mActiveMarker);
+										mLastActiveMarker = mActiveMarker;
+								}
             } else {
                 mTranslate = true;
             }
@@ -74,7 +118,7 @@ void MyWindow::click(int _button, int _state, int _x, int _y) {
         mTranslate = false;
         mRotate = false;
         mZooming = false;
-        if (mask == GLUT_ACTIVE_ALT)
+        if (mask == GLUT_ACTIVE_CTRL)
             mActiveMarker = -1;
     }
     glutPostRedisplay();
@@ -87,7 +131,7 @@ void MyWindow::drag(int _x, int _y) {
     mMouseY = _y;
     if (mActiveMarker != -1) {
         Vector3d deltaP = reverseProjection(deltaX, deltaY);
-        mWorld->modifyConstraint(deltaP);
+        mWorld->modifyConstraint(mActiveMarker, deltaP);
     }
 
     if (mRotate) {

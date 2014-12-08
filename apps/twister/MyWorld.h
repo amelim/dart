@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "dart/dynamics/Skeleton.h"
+#include <map>
 
 
 class MyWorld {
@@ -15,17 +16,16 @@ class MyWorld {
 
     void solve();
     void createConstraint(int _index);
-    void modifyConstraint(Eigen::Vector3d _deltaP);
+    void modifyConstraint(int _index, Eigen::Vector3d _deltaP);
     void removeConstraint(int _index);
+		Eigen::MatrixXd getArmJacobian (dart::dynamics::BodyNode* node, Eigen::Vector4d offset);
 
- protected:
     Eigen::VectorXd updateGradients();
 
     dart::dynamics::Skeleton *mSkel;
-    Eigen::Vector3d mC;
-    Eigen::MatrixXd mJ;
-    Eigen::Vector3d mTarget; // The target location of the constriant
-    int mConstrainedMarker; // The index of the constrained marker
+		std::map <int, Eigen::Vector3d> constraints;
+		std::map <int, double> weights;
+		bool noBadKnees;
 };
 
 #endif

@@ -37,10 +37,12 @@ public:
 
     // mActiveMarker is the index of the marker currently selected.
     int mActiveMarker;
+		int mLastActiveMarker;
 
     int coordsToMarker(int _x, int _y);
     Eigen::Vector3d reverseProjection(double _x, double _y);
     int processHits(GLint _hits, GLuint _buffer[]);
+		void printWeights();
 };
 
 #endif
