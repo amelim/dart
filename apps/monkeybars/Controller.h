@@ -76,6 +76,12 @@ public:
 
 	dart::simulation::World* mWorld;
 
+  std::vector<std::string> barList;
+  size_t currentBarTarget;
+
+  // Track whether both hands successfully grabbed the new bar
+  bool switchedLeft, switchedRight;
+
   void stand();
   void crouch();
   void jump();

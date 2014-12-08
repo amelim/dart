@@ -126,7 +126,7 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 			Eigen::VectorXd state = mSkel->getState();
 			state[27] = M_PI / 3.0;
 			state[33] = M_PI / 3.0;
-			state[35] = M_PI_2;
+			state[35] = M_PI / 2.0;
 			state[37] = M_PI / 3.0;
 			mSkel->setState(state);
 			mSkel->computeForwardKinematics(true, false, false);
