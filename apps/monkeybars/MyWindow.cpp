@@ -83,7 +83,7 @@ void MyWindow::drawSkels() {
     mWorld->getSkeleton(i)->draw(mRI);
 
 	// Draw the vector to the next bar
-	string barName = mController->barName;
+  string barName = mController->barList[mController->currentBarTarget];
 	if(mWorld->getSkeleton(barName) != NULL) {
 		dart::dynamics::Skeleton* mSkel = mWorld->getSkeleton("fullbody1");
 		dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barName)->getBodyNode("box");

@@ -385,13 +385,20 @@ void Controller::swing() {
   stablePD();
   mTimer--;
 
+  Eigen::Isometry3d hand = mSkel->getBodyNode("h_hand_left")->getTransform();
+ /* cout << hand.translation() << endl;
+  cout << "rotation " << hand.rotation() << endl;
+  size_t leftArmIds[] = { 27, 28, 29, 33, 35, 37 };
+  Eigen::VectorXd state = mSkel->getState();
+  for (size_t i = 0; i < 6; i++)
+    cout << i << ":" << state[leftArmIds[i]] << endl;*/
+
   // Check to see if there are any bars in front of us
   // Otherwise, jump to the edge
 
 	// Determine if need to jump
   Eigen::Vector3d com = mSkel->getWorldCOM();
 	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
-	bool jump = false;
 
   dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
 	Eigen::Vector3d barLocV = nextBar->getTransform().translation();
@@ -400,10 +407,10 @@ void Controller::swing() {
   // Jump if 
   // com(0) is center of mass
   // com_dq is rotational velocity
-	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1))
-    jump = true;
+	if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
+    mJump = true;
 
-	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
+	//if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
 
 	static double lastCOM = com(0); 
 	static double lastCOMdq = com_dq(0);
@@ -413,8 +420,7 @@ void Controller::swing() {
 	static int bla = 0;
 	if(startCounting) bla++;
 	// Jump or move to the next bar if possible
-	if(jump || mJump) {
-
+	if(mJump) {
 		// Check if there is a second bar; if not, jump
 		if(mWorld->getSkeleton("bar2") == NULL) {
 			std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
@@ -430,6 +436,7 @@ void Controller::swing() {
 			std::cout << mCurrentFrame << ": " << "SWING -> REACH_RIGHT_HAND" << std::endl;
 			mState = "REACH_RIGHT_HAND";
 		}
+    mJump = false;
 	}
 
 	// If not ready to jump, move legs to increase velocity
@@ -505,8 +512,8 @@ void Controller::reachLeftHand() {
 	if((counter > 500) && (mLeftHandHold != NULL)) {
 		counter = 0;
 		mKp(33,33) = 20.0;
-    mState = "SWING";
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> SWING" << std::endl;
+    mState = "GRAB";
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> GRAB" << std::endl;
     currentBarTarget++;
 		//barName = "bar4";
 		resetArmGains();
@@ -517,7 +524,6 @@ void Controller::reachLeftHand() {
 			state[leftArmIds[i]] = pose[leftArmIds[i]];
 		mSkel->setState(state);
 		leftHandGrab();
-	
 	}
 	
 	stablePD();
@@ -533,7 +539,7 @@ void Controller::reachRightHand() {
 
 	// Move to the new object
   dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
-	Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, 0.25);
+  Eigen::Vector3d goal = nextBar->getTransform().translation() +Eigen::Vector3d(0.0, 0.0, 0.25);
 	Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
 	// goal(2) = hand(2);
 	Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
@@ -542,8 +548,9 @@ void Controller::reachRightHand() {
 		mDesiredDofs[rightArmIds[i]] = pose[rightArmIds[i]];
 
 	// Break the left elbow to get the right hand higher
-	mDesiredDofs[33] = M_PI / 3.0;
-	mKp(33,33) = 400.0;
+
+  mDesiredDofs[33] = M_PI / 3.0;
+  mKp(33, 33) = 400.0;
 
 	// Attempt to hold the next object and if you can, change state
 	if(counter > 500) rightHandGrab();
