@@ -50,6 +50,7 @@
 
 using namespace std;
 
+double leftWrist, rightWrist;
 
 // ================================================================================================
 Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::ConstraintSolver* _constrSolver, double _t) {
@@ -163,6 +164,8 @@ void Controller::computeTorques(int _currentFrame) {
     release();
   } else if (mState == "SWING") {
     swing();
+  } else if (mState == "HANG") {
+    hang();
   } else if (mState == "MOVE_LEGS_FORWARD") {
     moveLegsForward();
   } else if (mState == "REACH_RIGHT_HAND") {
@@ -339,8 +342,58 @@ void Controller::grab() {
     mState = "SWING";
     mTimer = 200;
     std::cout << mCurrentFrame << ": " << "GRAB -> SWING" << std::endl;
+		Eigen::VectorXd state = mSkel->getState();
+		leftWrist = state(35);
+		rightWrist = state(36);
+    //mState = "HANG";
+    //mTimer = 2500;
+    //std::cout << mCurrentFrame << ": " << "GRAB -> HANG" << std::endl;
   }
 }  
+
+// ================================================================================================
+void Controller::hang() {
+
+	static int counter = 0;
+	bool debug = (counter++ % 100 == 0) ;
+	if(debug)
+		printf("wrists: (%lf, %lf)\n", leftWrist, rightWrist);
+	for (int i = 27; i < 39; i++) {
+		mKp(i, i) = 400.0;
+		mKd(i, i) = 40.0;
+	}
+  stablePD();
+  mTimer--;
+
+	static bool released = false;
+
+	if(mTimer == 0) {
+	
+		Eigen::VectorXd state = mSkel->getState();
+		printf("state0: (%lf, %lf)\n", state(35), state(36));
+		state(35) = leftWrist;
+		state(36) = rightWrist;
+		printf("state1: (%lf, %lf)\n", state(35), state(36));
+		mSkel->setState(state);
+		mSkel->computeForwardKinematics(true, true, false);
+		printf("\n\n\n\nRESET\n\n\n\n\n");
+		
+		//// Release right hand after stabilization
+		//if(!released) {
+		//	rightHandRelease();
+		//	released = true;
+		//}
+
+		//// Perform IK on the right hand to grasp properly
+		//else {
+
+		//}
+	}
+	else if(debug) {
+		Eigen::VectorXd state = mSkel->getState();
+		printf("state %d: (%lf, %lf)\n", counter, state(35), state(36));
+	}
+}
 
 // ================================================================================================
 void Controller::moveLegsForward() {
@@ -407,6 +460,7 @@ void Controller::swing() {
   // Jump if 
   // com(0) is center of mass
   // com_dq is rotational velocity
+	// if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1))
 	if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
     mJump = true;
 
@@ -415,8 +469,7 @@ void Controller::swing() {
 	static double lastCOM = com(0); 
 	static double lastCOMdq = com_dq(0);
 	static bool startCounting = false;
-	if(!startCounting) 
-		startCounting = (lastCOMdq < 0 && (com_dq(0) > 0));
+	if(!startCounting) startCounting = (lastCOMdq < 0 && (com_dq(0) > 0));
 	static int bla = 0;
 	if(startCounting) bla++;
 	// Jump or move to the next bar if possible
@@ -512,8 +565,11 @@ void Controller::reachLeftHand() {
 	if((counter > 500) && (mLeftHandHold != NULL)) {
 		counter = 0;
 		mKp(33,33) = 20.0;
-    mState = "GRAB";
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> GRAB" << std::endl;
+    //mState = "GRAB";
+    //std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> GRAB" << std::endl;
+    mState = "HANG";
+    mTimer = 2500;
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> HANG" << std::endl;
     currentBarTarget++;
 		//barName = "bar4";
 		resetArmGains();

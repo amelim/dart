@@ -87,6 +87,7 @@ public:
   void jump();
   void reach();
   void grab();
+	void hang();
   void moveLegsForward();
 	void reachRightHand();
 	void reachLeftHand();
