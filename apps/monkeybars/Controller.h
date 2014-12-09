@@ -104,6 +104,7 @@ public:
   void rightHandRelease();
 	void moveHandsApart();
 	void resetArmGains ();
+  void resetWristGains();
 	void pullUp ();
 
   dart::dynamics::Skeleton* mSkel;
