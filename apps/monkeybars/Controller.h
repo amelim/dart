@@ -79,6 +79,10 @@ public:
   std::vector<std::string> barList;
   size_t currentBarTarget;
 
+
+  // True for right arm, false if left arm
+  bool armToggle;
+
   // Track whether both hands successfully grabbed the new bar
   bool switchedLeft, switchedRight;
 

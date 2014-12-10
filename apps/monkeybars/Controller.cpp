@@ -114,6 +114,7 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
   mTimer = 300;
   mState = "STAND";
   mArch = 0;
+  armToggle = true;
 }
 
 // ================================================================================================
@@ -354,6 +355,23 @@ void Controller::grab() {
 // ================================================================================================
 void Controller::hang() {
 
+  mDesiredDofs = mDefaultPose;
+  mDesiredDofs[6] = 0.2;
+  mDesiredDofs[9] = 0.2;
+  mDesiredDofs[14] = -0.2;
+  mDesiredDofs[15] = -0.2;
+  mDesiredDofs[17] = -0.2;
+  mDesiredDofs[19] = -0.2;
+  mDesiredDofs[27] = 0.7;
+  mDesiredDofs[28] = -2.3;
+  mDesiredDofs[30] = 0.7;
+  mDesiredDofs[31] = 2.3;
+  mDesiredDofs[33] = 0.4;
+  mDesiredDofs[34] = 0.4;
+
+  if (mTimer < 0)
+    mTimer = 300;
+
 	for (int i = 27; i < 39; i++) {
 		mKp(i, i) = 400.0;
 		mKd(i, i) = 40.0;
@@ -376,14 +394,23 @@ void Controller::hang() {
 		
 		// Release right hand after stabilization
 		if(!released) {
-			rightHandRelease();
+      if (armToggle)
+        rightHandRelease();
+      else
+        leftHandRelease();
 			released = true;
 		}
 
 		// Perform IK on the right hand to grasp properly
 		else {
-			mState = "REACH_RIGHT_HAND";
-			std::cout << mCurrentFrame << ": " << "HANG -> REACH_RIGHT_HAND" << std::endl;
+      if (armToggle){
+        mState = "REACH_RIGHT_HAND";
+        std::cout << mCurrentFrame << ": " << "HANG -> REACH_RIGHT_HAND" << std::endl;
+      }
+      else{
+        mState = "REACH_LEFT_HAND";
+        std::cout << mCurrentFrame << ": " << "HANG -> REACH_LEFT_HAND" << std::endl;
+      }
 		}
 	}
 }
@@ -541,7 +568,6 @@ void Controller::reachLeftHand() {
   mKd(34, 34) = 30.0;
     
   // Change the left scapula ...
-  mDesiredDofs[24] =  M_PI  / 2.0;
   mDesiredDofs[30] =  -M_PI / 2.0;
   mDesiredDofs[32] =  -M_PI / 2.0;
   mKp(30, 30) = 400.0;
@@ -550,16 +576,6 @@ void Controller::reachLeftHand() {
   mKd(32, 32) = 80.0;
 
 
-  /*mDesiredDofs[30] = -M_PI;
-  mDesiredDofs[31] = M_PI / 2.0;
-  mKp(30, 30) = 300.0;
-  mKd(30, 30) = 80.0;
-  mKp(31, 31) = 250.0;
-  mKd(31, 31) = 80.0;*/
-  
-
-
-  
   // Move to the new object
   dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
   Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, -0.25);
@@ -576,11 +592,12 @@ void Controller::reachLeftHand() {
 
   if ((counter > 2500) && (mLeftHandHold != NULL)) {
 		counter = 0;
-		mKp(33,33) = 20.0;
+		mKp(34,34) = 20.0;
 		currentBarTarget = min(currentBarTarget+1, barList.size() - 1);
 
-		mState = "REACH_RIGHT_HAND";
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> REACH_RIGHT_HAND" << std::endl;
+    armToggle = true;
+		mState = "HANG";
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> HANG" << std::endl;
     //resetArmGains();
     //mState = "GRAB";
     //std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> GRAB" << std::endl;
@@ -608,6 +625,11 @@ void Controller::reachRightHand() {
   static int counter = 0;
   if (counter == 0) rightHandRelease();
   counter++;
+
+    Eigen::VectorXd state = mSkel->getState();
+    leftWrist = state(35);
+    cout << "Left Wrist: " << leftWrist << endl;
+  //rightWrist = state(36);
 
   if ((mRightHandHold == NULL)){
 
@@ -642,14 +664,10 @@ void Controller::reachRightHand() {
     static int wait = counter + 500;
     currentBarTarget++;
     mKp(33,33) = 20.0;
-    // Reset scapula
-    /*mKp(27, 27) = 20.0;
-    mKd(27, 27) = 2.0;
-    mKp(28, 28) = 20.0;
-    mKd(28, 28) = 2.0;*/
+    armToggle = false;
 
-    mState = "REACH_LEFT_HAND";
-    std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
+    mState = "HANG";
+    std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> HANG" << std::endl;
 
     resetArmGains();
     counter = 0;
