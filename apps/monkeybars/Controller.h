@@ -43,6 +43,9 @@
 #include "dart/simulation/World.h"
 #include <Eigen/Dense>
 
+extern double val;
+extern double val2;
+
 namespace dart {
 namespace dynamics {
 class BodyNode;

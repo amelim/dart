@@ -50,6 +50,8 @@
 
 using namespace std;
 
+double val = - M_PI / 4;
+double val2 = M_PI / 2;
 double leftWrist, rightWrist;
 
 // ================================================================================================
@@ -437,27 +439,40 @@ void Controller::moveLegsForward() {
 // ================================================================================================
 void Controller::swing() {
 
+	resetArmGains();
+	resetWristGains();
+  for (int i = 27; i < 39; i++) {
+    mKp(i, i) = 0.0;
+    mKd(i, i) = 0.0;
+  }
+
 	int counter = 0;
 	counter++;
 	bool dbg = counter % 25;
 
   mDesiredDofs = mDefaultPose;
-  mDesiredDofs[27] = 1;
-  mDesiredDofs[28] = -2.6;
-  mDesiredDofs[30] = 1;
-  mDesiredDofs[31] = 2.6;
+//  mDesiredDofs[27] = 1;
+//  mDesiredDofs[28] = -2.6;
+//  mDesiredDofs[30] = 1;
+//  mDesiredDofs[31] = 2.6;
+//  mDesiredDofs[33] = 0.4;
+//  mDesiredDofs[34] = 0.4;
+//  mDesiredDofs[13] = 0.0; 
+  mDesiredDofs[27] = 0.7;
+  mDesiredDofs[28] = -2.9;
+  mDesiredDofs[30] = 0.7;
+  mDesiredDofs[31] = 2.9;
   mDesiredDofs[33] = 0.4;
   mDesiredDofs[34] = 0.4;
-  mDesiredDofs[13] = 0.0; 
 
 	int waitTime = 200;
-	if(mWorld->getSkeleton("trapeze") != NULL) {
-		for (int i = 27; i < 39; i++) {
-			mKp(i, i) = 400.0;
-			mKd(i, i) = 40.0;
-		}
-		waitTime = 500;
-	}
+	// if(mWorld->getSkeleton("trapeze") != NULL) {
+	// 	for (int i = 27; i < 39; i++) {
+	// 		mKp(i, i) = 400.0;
+	// 		mKd(i, i) = 40.0;
+	// 	}
+	// 	waitTime = 500;
+	// }
   stablePD();
   mTimer--;
 
@@ -483,11 +498,11 @@ void Controller::swing() {
   // Jump if 
   // com(0) is center of mass
   // com_dq is rotational velocity
-	// if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1))
-	if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
+	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1))
+	//if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
     mJump = true;
 
-	//if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
+	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
 
 	static double lastCOM = com(0); 
 	static double lastCOMdq = com_dq(0);
@@ -498,7 +513,7 @@ void Controller::swing() {
 	// Jump or move to the next bar if possible
 	if(mJump) {
 		// Check if there is a second bar; if not, jump
-		if(mWorld->getSkeleton("bar2") == NULL) {
+		if(true || mWorld->getSkeleton("bar2") == NULL) {
 			std::cout << mCurrentFrame << ": " << "SWING-> RELEASE " << std::endl;
 			mState = "RELEASE";
 			mTimer = 0;
@@ -610,6 +625,7 @@ void Controller::reachLeftHand() {
 // ================================================================================================
 void Controller::reachRightHand() {
 
+	static int come = 0;
   // Release the right hand
   static int counter = 0;
   if (counter == 0) rightHandRelease();
@@ -624,7 +640,11 @@ void Controller::reachRightHand() {
 
   // Change the left scapula ...
   mDesiredDofs[27] = -M_PI / 4.0;
+	if(come == 1)
+		mDesiredDofs[27] = val;
   mDesiredDofs[28] = -M_PI / 2.0;
+	if(come == 1)
+		mDesiredDofs[28] = val2;
   mKp(27, 27) = 400.0;
   mKd(27, 27) = 40.0;
   mKp(28, 28) = 400.0;
@@ -654,6 +674,14 @@ void Controller::reachRightHand() {
 
     mState = "REACH_LEFT_HAND";
     std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> REACH_LEFT_HAND" << std::endl;
+		come += 1;
+		if(come == 2) {
+			mState = "SWING";
+			std::cout << mCurrentFrame << ": " << "REACH_RIGHT_HAND -> SWING" << std::endl;
+			resetArmGains();
+			resetWristGains();
+			mTimer = 200;
+		}
 
     resetArmGains();
     counter = 0;

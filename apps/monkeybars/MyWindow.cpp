@@ -111,6 +111,18 @@ void MyWindow::drawSkels() {
 void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 	static int stepSize = 10;
   switch (_key) {
+		case '+':
+			val += 0.1;
+			break;
+		case '-':
+			val += 0.1;
+			break;
+		case '4':
+			val2 += 0.1;
+			break;
+		case '5':
+			val2 += 0.1;
+			break;
 		case 'j':
 			mController->mJump = true;
 			break;
@@ -141,8 +153,8 @@ void MyWindow::keyboard(unsigned char _key, int _x, int _y) {
 			mSkel->computeForwardKinematics(true, false, false);
 		} break;
 
-		case '=': stepSize += 5; printf("step size: %d\n", stepSize); break;
-		case '-': stepSize -= 5; printf("step size: %d\n", stepSize); break;
+		case '0': stepSize += 5; printf("step size: %d\n", stepSize); break;
+		case '9': stepSize -= 5; printf("step size: %d\n", stepSize); break;
     case ' ':  // use space key to play or stop the motion
       mSimulating = !mSimulating;
       if (mSimulating) {
