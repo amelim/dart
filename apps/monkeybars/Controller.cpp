@@ -276,7 +276,7 @@ void Controller::jump() {
   stablePD();
 
   // Use Jacobian transpose to compute pushing torques
-  Eigen::Vector3d vf(-1300.0, -3600, 0.0);
+  Eigen::Vector3d vf(-1100.0, -3600, 0.0);
   Eigen::Vector3d offset(0.05, -0.02, 0.0);
   virtualForce(vf, mSkel->getBodyNode("h_heel_left"), offset);
   virtualForce(vf, mSkel->getBodyNode("h_heel_right"), offset);
@@ -661,8 +661,8 @@ void Controller::reachRightHand() {
   // Break the left elbow to get the right hand higher
   if (counter > 1300){
     mDesiredDofs[33] = denom;
-    mKp(33, 33) = 100.0;
-    mKd(33, 33) = 40.0;
+    mKp(33, 33) = 200.0;
+    mKd(33, 33) = 4.0;
   }
   
 
