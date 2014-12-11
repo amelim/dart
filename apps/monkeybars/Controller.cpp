@@ -64,7 +64,7 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
   barList.push_back("bar1");
   barList.push_back("bar2");
   barList.push_back("bar3");
-  barList.push_back("bar4");
+  //barList.push_back("bar4");
   currentBarTarget = 2;
   //barName = "bar3";
 
@@ -276,7 +276,7 @@ void Controller::jump() {
   stablePD();
 
   // Use Jacobian transpose to compute pushing torques
-  Eigen::Vector3d vf(-1100.0, -2600, 0.0);
+  Eigen::Vector3d vf(-1500.0, -3600, 0.0);
   Eigen::Vector3d offset(0.05, -0.02, 0.0);
   virtualForce(vf, mSkel->getBodyNode("h_heel_left"), offset);
   virtualForce(vf, mSkel->getBodyNode("h_heel_right"), offset);
@@ -614,8 +614,8 @@ void Controller::reachLeftHand() {
 		counter = 0;
 
     armToggle = true;
-		mState = "REACH_RIGHT_HAND";
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> REACH_RIGHT_HAND" << std::endl;
+		mState = "SWING";
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> SWING" << std::endl;
     resetArmGains();
 	}
 	

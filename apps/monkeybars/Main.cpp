@@ -37,7 +37,7 @@
 
 #include <iostream>
 #include <vector>
-
+#include "dart/math/helpers.h"
 #include "dart/utils/Paths.h"
 #include "dart/dynamics/BodyNode.h"
 #include "dart/dynamics/Joint.h"
@@ -85,6 +85,30 @@ int main(int argc, char* argv[]) {
   window.setWorld(myWorld);
 	myController->setWorld(myWorld);
   window.setController(myController);
+  dart::math::seedRand();
+  Eigen::VectorXd position = myWorld->getSkeleton("bar1")->getPositions();
+  position[3] += dart::math::random(-0.1, 0.1);
+  position[4] += dart::math::random(-0.1, 0.1);
+  myWorld->getSkeleton("bar1")->setPositions(position);
+  myWorld->getSkeleton("bar1")->computeForwardKinematics(true, false, false);
+
+  position = myWorld->getSkeleton("bar2")->getPositions();
+  position[3] += dart::math::random(-0.1, 0.1);
+  position[4] += dart::math::random(-0.1, 0.1);
+  myWorld->getSkeleton("bar2")->setPositions(position);
+  myWorld->getSkeleton("bar2")->computeForwardKinematics(true, false, false);
+
+  position = myWorld->getSkeleton("bar3")->getPositions();
+  position[3] += dart::math::random(-0.1, 0.1);
+  position[4] += dart::math::random(-0.1, 0.1);
+  myWorld->getSkeleton("bar3")->setPositions(position);
+  myWorld->getSkeleton("bar3")->computeForwardKinematics(true, false, false);
+
+  position = myWorld->getSkeleton("bar4")->getPositions();
+  position[3] += dart::math::random(-0.1, 0.1);
+  position[4] += dart::math::random(-0.1, 0.1);
+  myWorld->getSkeleton("bar4")->setPositions(position);
+  myWorld->getSkeleton("bar4")->computeForwardKinematics(true, false, false);
 
   std::cout << "space bar: simulation on/off" << std::endl;
   std::cout << "'p': playback/stop" << std::endl;
