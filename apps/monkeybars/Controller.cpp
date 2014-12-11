@@ -61,6 +61,8 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
   mTimestep = _t;
 	mJump = false;
 
+  mClimb = false;
+
   barList.push_back("bar1");
   barList.push_back("bar2");
   barList.push_back("bar3");
@@ -348,9 +350,15 @@ void Controller::grab() {
 		//Eigen::VectorXd state = mSkel->getState();
 		//leftWrist = state(35);
 		//rightWrist = state(36);
-    mState = "HANG";
-    mTimer = 2500;
-    std::cout << mCurrentFrame << ": " << "GRAB -> HANG" << std::endl;
+    if (mClimb){
+      mState = "HANG";
+      mTimer = 2500;
+      std::cout << mCurrentFrame << ": " << "GRAB -> HANG" << std::endl;
+    }
+    else{
+      mState = "SWING";
+      std::cout << mCurrentFrame << ": " << "GRAB -> SWING" << std::endl;
+    }
   }
 }  
 
@@ -438,41 +446,47 @@ void Controller::moveLegsForward() {
 
 // ================================================================================================
 void Controller::swing() {
-
-	resetArmGains();
-	resetWristGains();
-  for (int i = 27; i < 39; i++) {
-    mKp(i, i) = 0.0;
-    mKd(i, i) = 0.0;
+  if (mClimb){
+    resetArmGains();
+    resetWristGains();
+    for (int i = 27; i < 39; i++) {
+      mKp(i, i) = 0.0;
+      mKd(i, i) = 0.0;
+    }
   }
+
 
 	int counter = 0;
 	counter++;
 	bool dbg = counter % 25;
 
   mDesiredDofs = mDefaultPose;
-//  mDesiredDofs[27] = 1;
-//  mDesiredDofs[28] = -2.6;
-//  mDesiredDofs[30] = 1;
-//  mDesiredDofs[31] = 2.6;
-//  mDesiredDofs[33] = 0.4;
-//  mDesiredDofs[34] = 0.4;
-//  mDesiredDofs[13] = 0.0; 
-  mDesiredDofs[27] = 0.7;
-  mDesiredDofs[28] = -2.9;
-  mDesiredDofs[30] = 0.7;
-  mDesiredDofs[31] = 2.9;
-  mDesiredDofs[33] = 0.4;
-  mDesiredDofs[34] = 0.4;
+  if (!mClimb){
+    mDesiredDofs[27] = 1;
+    mDesiredDofs[28] = -2.6;
+    mDesiredDofs[30] = 1;
+    mDesiredDofs[31] = 2.6;
+    mDesiredDofs[33] = 0.4;
+    mDesiredDofs[34] = 0.4;
+    mDesiredDofs[13] = 0.0;
+  }
+  else{
+    mDesiredDofs[27] = 0.7;
+    mDesiredDofs[28] = -2.9;
+    mDesiredDofs[30] = 0.7;
+    mDesiredDofs[31] = 2.9;
+    mDesiredDofs[33] = 0.4;
+    mDesiredDofs[34] = 0.4;
+  }
 
 	int waitTime = 200;
-	// if(mWorld->getSkeleton("trapeze") != NULL) {
-	// 	for (int i = 27; i < 39; i++) {
-	// 		mKp(i, i) = 400.0;
-	// 		mKd(i, i) = 40.0;
-	// 	}
-	// 	waitTime = 500;
-	// }
+	if(mWorld->getSkeleton("trapeze") != NULL) {
+		for (int i = 27; i < 39; i++) {
+	 		mKp(i, i) = 400.0;
+	 		mKd(i, i) = 40.0;
+	 	}
+	 	waitTime = 500;
+	}
   stablePD();
   mTimer--;
 
@@ -490,24 +504,34 @@ void Controller::swing() {
 	// Determine if need to jump
   Eigen::Vector3d com = mSkel->getWorldCOM();
 	Eigen::Vector3d com_dq = mSkel->getWorldCOMVelocity();
-
-  dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
-	Eigen::Vector3d barLocV = nextBar->getTransform().translation();
-  double barLoc = barLocV.x();
+  dart::dynamics::BodyNode* nextBar;
+  double barLoc;
+  if (mWorld->getSkeleton("trapeze") != NULL)
+    barLoc = 1.2;
+  else{
+    nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
+    Eigen::Vector3d barLocV = nextBar->getTransform().translation();
+    barLoc = barLocV.x();
+  }
+	
+  
 
   // Jump if 
   // com(0) is center of mass
   // com_dq is rotational velocity
-	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.1))
-	//if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
+	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.3))
     mJump = true;
+	//if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
+    
 
 	if(dbg) printf("%lf vs. %lf, %lf\n", com(0), barLoc, com_dq(0));
 
 	static double lastCOM = com(0); 
 	static double lastCOMdq = com_dq(0);
 	static bool startCounting = false;
-	if(!startCounting) startCounting = (lastCOMdq < 0 && (com_dq(0) > 0));
+	if(!startCounting) 
+    startCounting = (lastCOMdq < 0 && (com_dq(0) > 0));
+
 	static int bla = 0;
 	if(startCounting) bla++;
 	// Jump or move to the next bar if possible
@@ -542,7 +566,6 @@ void Controller::swing() {
 
 		bla = 0;
 		startCounting = false;
-		cout << "hi?" << endl;
 		mState = "MOVE_LEGS_FORWARD";
 		mTimer = 500;
 		std::cout << mCurrentFrame << ": " << "SWING -> MOVE_LEGS_FORWARD" << std::endl;
@@ -764,11 +787,11 @@ void Controller::leftHandGrab() {
   mConstraintSolver->addConstraint(hold);
   bd->setCollidable(false);
   mLeftHandHold = hold;
-  dart::dynamics::BodyNode* target = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
+  /*dart::dynamics::BodyNode* target = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
   if (((bd->getTransform().translation() - target->getTransform().translation()).norm() < 0.5) && switchedLeft){
     cout << "Left hand target reached!" << endl;
     switchedLeft = true;
-  }
+  }*/
 }
 
 // ================================================================================================
@@ -794,11 +817,11 @@ void Controller::rightHandGrab() {
   bd->setCollidable(false);
   mRightHandHold = hold;
 
-  dart::dynamics::BodyNode* target = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
+  /*dart::dynamics::BodyNode* target = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
   if (((bd->getTransform().translation() - target->getTransform().translation()).norm() < 0.5) && switchedRight){
     cout << "Left hand target reached!" << endl;
     switchedRight = true;
-  }
+  }*/
 }
 
 // ================================================================================================

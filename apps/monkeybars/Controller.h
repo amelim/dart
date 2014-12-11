@@ -85,6 +85,7 @@ public:
 
   // True for right arm, false if left arm
   bool armToggle;
+  bool mClimb;
 
   // Track whether both hands successfully grabbed the new bar
   bool switchedLeft, switchedRight;

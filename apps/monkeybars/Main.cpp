@@ -51,10 +51,12 @@
 int main(int argc, char* argv[]) {
   // Create and initialize the world
 	char buf [1024];
-	sprintf(buf, "%sskel/monkeybars%s.skel", DART_DATA_PATH, argv[1]);
+  int select = 3;
+  
+  sprintf(buf, "%sskel/monkeybars%d.skel", DART_DATA_PATH, select);
   dart::simulation::World* myWorld
-      = dart::utils::SkelParser::readWorld(//buf);
-          DART_DATA_PATH"skel/monkeybars2.skel");
+      = dart::utils::SkelParser::readWorld(buf);
+          //DART_DATA_PATH"skel/monkeybars2.skel");
   assert(myWorld != NULL);
 
   Eigen::Vector3d gravity(0.0, -9.81, 0.0);
@@ -84,6 +86,19 @@ int main(int argc, char* argv[]) {
   MyWindow window;
   window.setWorld(myWorld);
 	myController->setWorld(myWorld);
+  switch (select){
+  case 1:
+    myController->currentBarTarget = 0;
+    break;
+  case 2:
+    myController->mClimb = true;
+    break;
+  case 3:
+    myController->barList.clear();
+    myController->barList.push_back("trapeze");
+    myController->currentBarTarget = 0;
+  }
+
   window.setController(myController);
 
   std::cout << "space bar: simulation on/off" << std::endl;
