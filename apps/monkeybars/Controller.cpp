@@ -64,7 +64,7 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
   barList.push_back("bar1");
   barList.push_back("bar2");
   barList.push_back("bar3");
-  //barList.push_back("bar4");
+  barList.push_back("bar4");
   currentBarTarget = 2;
   //barName = "bar3";
 
@@ -276,7 +276,7 @@ void Controller::jump() {
   stablePD();
 
   // Use Jacobian transpose to compute pushing torques
-  Eigen::Vector3d vf(-1500.0, -3600, 0.0);
+  Eigen::Vector3d vf(-1600.0, -3600, 0.0);
   Eigen::Vector3d offset(0.05, -0.02, 0.0);
   virtualForce(vf, mSkel->getBodyNode("h_heel_left"), offset);
   virtualForce(vf, mSkel->getBodyNode("h_heel_right"), offset);
@@ -574,48 +574,66 @@ void Controller::resetWristGains(){
 // ================================================================================================
 void Controller::reachLeftHand() {
 
+  mDesiredDofs = mDefaultPose;
   // Let go of the left hand
   static int counter = 0;
   if (counter == 0) leftHandRelease();
   counter++;
+  static double denom = M_PI / 2.0;
+  if (counter > 2500){
+    denom += 0.001;
 
+    if (denom > M_PI)
+      denom = M_PI;
+  }
   // Break the right elbow to get the left hand higher
-
-  if (counter > 300){
-    mDesiredDofs[34] = M_PI / 2.0;
-    mKp(34, 34) = 30.0;
+  if (counter > 1300){
+    mDesiredDofs[34] = denom;
+    mKp(34, 34) = 200.0;
   }
   
-    
+
   // Change the left scapula ...
-  mDesiredDofs[30] =  -M_PI / 2.0;
-  mDesiredDofs[32] =  -M_PI / 2.0;
+  mDesiredDofs[30] = -M_PI / 2.0;
+  mDesiredDofs[32] = -M_PI / 2.0;
   mKp(30, 30) = 400.0;
   mKd(30, 30) = 30.0;
   mKp(32, 32) = 400.0;
   mKd(32, 32) = 80.0;
 
-
-  // Move to the new object
-  dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
-  Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, -0.25);
-  Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_left")->getTransform().translation();
-  Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_left"), goal);
   size_t leftArmIds[] = { 27, 28, 29, 33, 35, 37 };
-  for (size_t i = 0; i < 6; i++){
-    mDesiredDofs[leftArmIds[i]] = pose[leftArmIds[i]];
-    mKp(leftArmIds[i], leftArmIds[i]) = 300.0;
+  if (counter > 1000){
+    // Move to the new object
+    dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
+    Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, -0.25);
+    Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_left")->getTransform().translation();
+    Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_left"), goal);
+
+    for (size_t i = 0; i < 6; i++){
+      mDesiredDofs[leftArmIds[i]] = pose[leftArmIds[i]];
+      mKp(leftArmIds[i], leftArmIds[i]) = 300.0;
+      mKp(leftArmIds[i], leftArmIds[i]) = 40.0;
+    }
+  }
+  else{
+      for (size_t i = 0; i < 6; i++){
+        mDesiredDofs[leftArmIds[i]] = mDefaultPose[leftArmIds[i]];   
+        mKp(leftArmIds[i], leftArmIds[i]) = 300.0;
+        mKp(leftArmIds[i], leftArmIds[i]) = 40.0;
+      }
   }
 
 	// Attempt to hold the next object and if you can, change state
-  if (counter > 700) leftHandGrab();
+  if (counter > 1700) leftHandGrab();
 
-  if ((counter > 700) && (mLeftHandHold != NULL)) {
+  if ((counter > 1700) && (mLeftHandHold != NULL)) {
 		counter = 0;
+    denom = M_PI / 2.0;
+    mKp(34, 34) = 20.0;
 
     armToggle = true;
-		mState = "SWING";
-    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> SWING" << std::endl;
+		mState = "REACH_RIGHT_HAND";
+    std::cout << mCurrentFrame << ": " << "REACH_LEFT_HAND -> REACH_RIGHT_HAND" << std::endl;
     resetArmGains();
 	}
 	
@@ -625,48 +643,68 @@ void Controller::reachLeftHand() {
 // ================================================================================================
 void Controller::reachRightHand() {
 
+  
+
 	static int come = 0;
   // Release the right hand
   static int counter = 0;
   if (counter == 0) rightHandRelease();
   counter++;
-
+  static double denom = M_PI / 2.0;
+  static double shoulder = -M_PI / 4.0;
+  if (counter > 2500){
+    denom += 0.001;
+    if (denom > M_PI - 0.2)
+      denom = M_PI - 0.2;
+  }
 
   // Break the left elbow to get the right hand higher
-  if (counter > 300){
-    mDesiredDofs[33] = M_PI / 3.0;
-    mKp(33, 33) = 30;
+  if (counter > 1300){
+    mDesiredDofs[33] = denom;
+    mKp(33, 33) = 100.0;
+    mKd(33, 33) = 40.0;
   }
+  
 
   // Change the left scapula ...
   mDesiredDofs[27] = -M_PI / 4.0;
-	if(come == 1)
-		mDesiredDofs[27] = val;
+	//if(come == 1)
+	//	mDesiredDofs[27] = val;
   mDesiredDofs[28] = -M_PI / 2.0;
-	if(come == 1)
-		mDesiredDofs[28] = val2;
+	//if(come == 1)
+	//	mDesiredDofs[28] = val2;
   mKp(27, 27) = 400.0;
   mKd(27, 27) = 40.0;
   mKp(28, 28) = 400.0;
   mKd(28, 28) = 40.0;
 
-
-  // Move the hand 25 cm to the right of the next bar's center
-  dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
-  Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, 0.25);
-  Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
-  Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
   size_t rightArmIds[] = { 30, 31, 32, 34, 36, 38 };
-  for (size_t i = 0; i < 6; i++){
-    mDesiredDofs[rightArmIds[i]] = pose[rightArmIds[i]];
-    mKp(rightArmIds[i], rightArmIds[i]) = 300.0;
+  if (counter > 1000){
+    // Move the hand 25 cm to the right of the next bar's center
+    dart::dynamics::BodyNode* nextBar = mWorld->getSkeleton(barList[currentBarTarget].c_str())->getBodyNode("box");
+    Eigen::Vector3d goal = nextBar->getTransform().translation() + Eigen::Vector3d(0.0, 0.0, 0.25);
+    Eigen::Vector3d hand = mSkel->getBodyNode("h_hand_right")->getTransform().translation();
+    Eigen::VectorXd pose = ik(mSkel->getBodyNode("h_hand_right"), goal);
+    
+    for (size_t i = 0; i < 6; i++){
+      mDesiredDofs[rightArmIds[i]] = pose[rightArmIds[i]];
+      mKp(rightArmIds[i], rightArmIds[i]) = 400.0;
+      mKd(rightArmIds[i], rightArmIds[i]) = 40.0;
+    }
   }
-  
+  else{
+    for (size_t i = 0; i < 6; i++){
+      mDesiredDofs[rightArmIds[i]] = mDefaultPose[rightArmIds[i]];
+      mKp(rightArmIds[i], rightArmIds[i]) = 400.0;
+      mKd(rightArmIds[i], rightArmIds[i]) = 40.0;
+    }
+  }
 
-  if (counter > 700) rightHandGrab();
+  if (counter > 1700) rightHandGrab();
 
   // If holding, try to hold with the left hand the same (?) bar
-  if ((counter > 700) && (mRightHandHold != NULL)) {
+  if ((counter > 1700) && (mRightHandHold != NULL)) {
+    mKp(33, 33) = 20.0;
     static int wait = counter + 500;
     currentBarTarget = min(currentBarTarget + 1, barList.size() - 1);
 
@@ -685,6 +723,8 @@ void Controller::reachRightHand() {
 
     resetArmGains();
     counter = 0;
+    denom = M_PI / 2.0;
+    shoulder = -M_PI / 4.0;
   }
 
 
