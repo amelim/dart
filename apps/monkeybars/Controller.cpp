@@ -276,7 +276,7 @@ void Controller::jump() {
   stablePD();
 
   // Use Jacobian transpose to compute pushing torques
-  Eigen::Vector3d vf(-1600.0, -3600, 0.0);
+  Eigen::Vector3d vf(-1300.0, -3600, 0.0);
   Eigen::Vector3d offset(0.05, -0.02, 0.0);
   virtualForce(vf, mSkel->getBodyNode("h_heel_left"), offset);
   virtualForce(vf, mSkel->getBodyNode("h_heel_right"), offset);
