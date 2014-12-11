@@ -51,7 +51,7 @@
 int main(int argc, char* argv[]) {
   // Create and initialize the world
 	char buf [1024];
-  int select = 3;
+  int select = 2;
   
   sprintf(buf, "%sskel/monkeybars%d.skel", DART_DATA_PATH, select);
   dart::simulation::World* myWorld
@@ -97,6 +97,7 @@ int main(int argc, char* argv[]) {
     myController->barList.clear();
     myController->barList.push_back("trapeze");
     myController->currentBarTarget = 0;
+    myController->jumpThresh = 1.8;
   }
 
   window.setController(myController);

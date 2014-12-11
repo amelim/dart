@@ -81,6 +81,7 @@ public:
 
   std::vector<std::string> barList;
   size_t currentBarTarget;
+  double jumpThresh;
 
 
   // True for right arm, false if left arm

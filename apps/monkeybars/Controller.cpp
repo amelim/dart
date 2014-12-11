@@ -62,6 +62,7 @@ Controller::Controller(dart::dynamics::Skeleton* _skel, dart::constraint::Constr
 	mJump = false;
 
   mClimb = false;
+  jumpThresh = 1.3;
 
   barList.push_back("bar1");
   barList.push_back("bar2");
@@ -446,6 +447,8 @@ void Controller::moveLegsForward() {
 
 // ================================================================================================
 void Controller::swing() {
+
+
   if (mClimb){
     resetArmGains();
     resetWristGains();
@@ -479,14 +482,14 @@ void Controller::swing() {
     mDesiredDofs[34] = 0.4;
   }
 
-	int waitTime = 200;
-	if(mWorld->getSkeleton("trapeze") != NULL) {
-		for (int i = 27; i < 39; i++) {
-	 		mKp(i, i) = 400.0;
-	 		mKd(i, i) = 40.0;
-	 	}
-	 	waitTime = 500;
-	}
+  int waitTime = 200;
+  if (mWorld->getSkeleton("trapeze") != NULL) {
+    for (int i = 27; i < 39; i++) {
+      mKp(i, i) = 60;
+      mKd(i, i) = 6.0;
+    }
+    waitTime = 400;
+  }
   stablePD();
   mTimer--;
 
@@ -513,14 +516,14 @@ void Controller::swing() {
     Eigen::Vector3d barLocV = nextBar->getTransform().translation();
     barLoc = barLocV.x();
   }
-	
-  
 
   // Jump if 
   // com(0) is center of mass
   // com_dq is rotational velocity
-	if((com(0) > (barLoc + 0.15)) && (com_dq(0) > 1.3))
-    mJump = true;
+
+ 
+  if ((com(0) > (barLoc + 0.15)) && (com_dq(0) > jumpThresh)) mJump = true;
+  
 	//if((com(0) > (barLoc - 0.2)) && (com_dq(0) > 1.6))
     
 
